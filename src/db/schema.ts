@@ -11,6 +11,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 
@@ -119,6 +120,10 @@ export const branches = pgTable(
     name: text("name").notNull(),
     address: text("address").notNull(),
     hours: text("hours").notNull(),
+    // R2 object key of the branch photo.
+    imageKey: text("image_key"),
+    // Where payslips are copied for documentation, e.g. the owner's accountant.
+    recordsEmail: text("records_email"),
     status: reviewStatus("status").notNull().default("pending"),
     reviewNote: text("review_note"),
     reviewedAt: timestamp("reviewed_at"),
@@ -194,6 +199,12 @@ export const employees = pgTable("employees", {
   name: text("name").notNull(),
   position: text("position").notNull(),
   hourlyRateCents: integer("hourly_rate_cents").notNull(),
+  // Payslips are emailed here.
+  email: text("email"),
+  // Where the owner sends this employee's pay, printed on payslips: bank, GCash, Maya or cash.
+  payoutMethod: text("payout_method"),
+  payoutAccountName: text("payout_account_name"),
+  payoutAccountNumber: text("payout_account_number"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -213,6 +224,7 @@ export const payrollEntries = pgTable(
     hours: numeric("hours", { precision: 6, scale: 2 }).notNull(),
     amountCents: integer("amount_cents").notNull(),
     note: text("note").notNull().default(""),
+    payslipEmailedAt: timestamp("payslip_emailed_at"),
     recordedBy: text("recorded_by")
       .notNull()
       .references(() => user.id),
@@ -261,4 +273,24 @@ export const auditLogs = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("audit_created_idx").on(t.createdAt), index("audit_user_idx").on(t.userId)],
+);
+
+// Each branch owes Brew Lab a platform fee on its paid sales. One row per branch
+// per month records the amounts once the admin marks that month's fee as paid.
+export const feeSettlements = pgTable(
+  "fee_settlements",
+  {
+    id: serial("id").primaryKey(),
+    branchId: integer("branch_id")
+      .notNull()
+      .references(() => branches.id, { onDelete: "cascade" }),
+    // "YYYY-MM" in Philippine time.
+    month: text("month").notNull(),
+    salesCents: integer("sales_cents").notNull(),
+    feeCents: integer("fee_cents").notNull(),
+    paidAt: timestamp("paid_at").notNull().defaultNow(),
+    markedBy: text("marked_by").references(() => user.id, { onDelete: "set null" }),
+    note: text("note").notNull().default(""),
+  },
+  (t) => [uniqueIndex("fee_branch_month_idx").on(t.branchId, t.month)],
 );

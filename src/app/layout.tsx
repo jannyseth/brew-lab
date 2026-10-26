@@ -33,12 +33,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 Brew Lab
               </Link>
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium">
-                <Link href="/menu" className="hover:text-accent">
-                  Menu
-                </Link>
-                <Link href="/menu/build-your-own" className="hover:text-accent">
-                  Build your own
-                </Link>
                 <Suspense fallback={null}>
                   <UserMenu />
                 </Suspense>

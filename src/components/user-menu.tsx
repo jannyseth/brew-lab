@@ -1,16 +1,29 @@
 import Link from "next/link";
 import type { Role } from "@/lib/auth";
 import { getSession } from "@/lib/session";
+import { Avatar } from "./avatar";
 import { CartLink } from "./cart";
 import { SignOutButton } from "./sign-out-button";
 
+const menuLinks = (
+  <>
+    <Link href="/menu" className="hover:text-accent">
+      Menu
+    </Link>
+    <Link href="/menu/build-your-own" className="hover:text-accent">
+      Build your own
+    </Link>
+  </>
+);
+
 // Each account type sees only its own area: customers never see the branch
-// dashboard, and branch owners and the admin don't get a cart.
+// dashboard, and branch owners and the admin don't see the menu or a cart.
 export async function UserMenu() {
   const session = await getSession();
   if (!session) {
     return (
       <>
+        {menuLinks}
         <CartLink />
         <Link href="/sign-in" className="hover:text-accent">
           Sign in
@@ -27,6 +40,7 @@ export async function UserMenu() {
     <>
       {role === "customer" && (
         <>
+          {menuLinks}
           <CartLink />
           <Link href="/orders" className="hover:text-accent">
             Orders
@@ -46,6 +60,9 @@ export async function UserMenu() {
           Admin
         </Link>
       )}
+      <Link href="/profile" className="flex items-center gap-2 hover:text-accent" aria-label="Your profile">
+        <Avatar src={session.user.image} name={session.user.name || session.user.email} size={28} />
+      </Link>
       <SignOutButton />
     </>
   );

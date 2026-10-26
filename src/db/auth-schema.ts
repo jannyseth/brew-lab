@@ -23,6 +23,9 @@ export const user = pgTable("user", {
   role: text("role").default("customer").notNull(),
   accountType: text("account_type").default("customer").notNull(),
   termsAcceptedAt: timestamp("terms_accepted_at"),
+  // Optional, separate consent to use order history for personalized offers and analytics.
+  analyticsConsent: boolean("analytics_consent").default(false).notNull(),
+  analyticsConsentAt: timestamp("analytics_consent_at"),
 });
 
 export const session = pgTable(

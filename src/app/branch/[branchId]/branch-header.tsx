@@ -1,44 +1,30 @@
-import Link from "next/link";
+import { AreaTitle } from "@/components/area-shell";
 import { Badge } from "@/components/ui";
 
-const tabs = [
-  { href: "", label: "Orders" },
-  { href: "/sales", label: "Sales" },
-  { href: "/payroll", label: "Payroll" },
-] as const;
-
+/** Page title for a branch's pages; navigation lives in the sidebar. */
 export function BranchHeader({
   branch,
   active,
+  actions,
 }: {
   branch: { id: number; name: string; status: string };
-  active: (typeof tabs)[number]["label"];
+  active: string;
+  actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-8">
-      <Link href="/branch" className="text-sm text-muted hover:text-accent">
-        ← All branches
-      </Link>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-4xl font-semibold tracking-tight">{branch.name}</h1>
-        <Badge status={branch.status} />
-      </div>
+    <>
+      <AreaTitle
+        title={active}
+        subtitle={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {branch.name} <Badge status={branch.status} />
+          </span>
+        }
+        actions={actions}
+      />
       {branch.status !== "approved" && (
-        <p className="mt-2 text-sm text-muted">Customers can&apos;t order from this branch until the admin approves it.</p>
+        <p className="-mt-4 mb-6 text-sm text-muted">Customers can&apos;t order from this branch until the admin approves it.</p>
       )}
-      <nav className="mt-6 flex gap-2 border-b border-line">
-        {tabs.map((tab) => (
-          <Link
-            key={tab.label}
-            href={`/branch/${branch.id}${tab.href}`}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
-              tab.label === active ? "border-accent text-foreground" : "border-transparent text-muted hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
-    </div>
+    </>
   );
 }

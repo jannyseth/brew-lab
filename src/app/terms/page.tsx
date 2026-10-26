@@ -44,8 +44,9 @@ export default function TermsPage() {
         <ol>
           <li>Branch owners must be verified by Brew Lab before they can open a branch, and every branch must be approved before customers can see it.</li>
           <li>An approved branch receives a license valid for one (1) year. The license renews for another year only if the branch records at least ₱100,000 in paid sales through Brew Lab during the license year. Otherwise it expires and the branch stops accepting online orders until Brew Lab issues a new license.</li>
+          <li>Each branch pays Brew Lab a platform fee of thirty percent (30%) of its paid sales through Brew Lab, settled monthly. Brew Lab shows the amount due in the branch dashboard and records each payment.</li>
           <li>Owners must hold all permits required by law, follow food safety and sanitation standards, and treat customers and employees fairly.</li>
-          <li>The payroll feature is a record-keeping log only. Brew Lab does not pay employees or handle wages, and owners remain responsible for their legal obligations as employers.</li>
+          <li>The payroll feature is a record-keeping log only. Brew Lab does not pay employees or handle wages, and owners remain responsible for their legal obligations as employers. Owners confirm they may share their employees&apos; names, emails and receiving accounts with Brew Lab so payslips can be generated and emailed.</li>
           <li>Brew Lab may suspend a branch or revoke its license for breach of these Terms or the law.</li>
         </ol>
       </section>
@@ -59,7 +60,9 @@ export default function TermsPage() {
           <li><strong>Branch operations:</strong> branch owners consent to Brew Lab using their identity, business, sales and payroll records to verify them, issue and renew licenses, and prepare platform-wide financial reports.</li>
           <li><strong>Security:</strong> we record sign-ins (time, IP address, browser) and changes made in accounts in an activity log visible to our administrator, to protect users and investigate misuse.</li>
           <li><strong>Legal compliance:</strong> we keep records required by law and disclose data to authorities only when legally required.</li>
-          <li><strong>Limits:</strong> we will not sell your data or use it for marketing without your separate, express consent.</li>
+          <li><strong>Personalized offers (optional):</strong> only if you opt in, we use your order history to learn your preferences and send you offers. Opting in is never required to use Brew Lab.</li>
+          <li><strong>Anonymous statistics:</strong> we may combine all orders into anonymous statistics (for example, popular ingredients and busy hours) and share or sell those statistics. They never include your name, contact details or individual order history.</li>
+          <li><strong>Limits:</strong> we will not sell your personal data, or use it for marketing without your separate, express consent.</li>
           <li><strong>Withdrawal:</strong> you may withdraw your consent and ask for your account to be deleted at any time by emailing {email}. Records we must keep by law are retained only for as long as required.</li>
         </ol>
         <p>

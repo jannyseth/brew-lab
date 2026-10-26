@@ -20,6 +20,7 @@ export function SignUpForm() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const [offers, setOffers] = useState(false);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -34,6 +35,7 @@ export function SignUpForm() {
       email,
       password,
       accountType,
+      analyticsConsent: accountType === "customer" && offers,
       // Checked again on the server: sign-up is refused without consent.
       ...({ acceptedTerms: accepted } as object),
     });
@@ -143,6 +145,21 @@ export function SignUpForm() {
           , and I consent to Brew Lab processing my personal data for the purposes described there.
         </span>
       </label>
+
+      {accountType === "customer" && (
+        <label className="mt-3 flex gap-3 text-sm">
+          <input
+            type="checkbox"
+            checked={offers}
+            onChange={(e) => setOffers(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+          />
+          <span>
+            <span className="font-medium">Optional:</span> use my order history to send me personalized offers. You can turn
+            this off any time in your profile.
+          </span>
+        </label>
+      )}
 
       <FormError message={error} />
       <button disabled={busy || !accepted} className={authButton}>

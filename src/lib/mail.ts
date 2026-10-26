@@ -50,3 +50,29 @@ export async function sendAuthCode(email: string, code: string, type: keyof type
     console.error("Failed to send email code", err);
   }
 }
+
+/** Sends a document (receipt, payslip) as a PDF attachment. Returns whether it was sent. */
+export async function sendDocument(opts: { to: string[]; subject: string; text: string; filename: string; pdf: Uint8Array }) {
+  if (opts.to.length === 0) return false;
+  if (!process.env.GMAIL_APP_PASSWORD) {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[dev] Would email "${opts.subject}" with ${opts.filename} to ${opts.to.join(", ")}`);
+      return true;
+    }
+    console.error("GMAIL_APP_PASSWORD is not set; documents can't be emailed.");
+    return false;
+  }
+  try {
+    await transporter.sendMail({
+      from: `Brew Lab <${process.env.GMAIL_USER}>`,
+      to: opts.to,
+      subject: opts.subject,
+      text: opts.text,
+      attachments: [{ filename: opts.filename, content: Buffer.from(opts.pdf), contentType: "application/pdf" }],
+    });
+    return true;
+  } catch (err) {
+    console.error("Failed to email document", err);
+    return false;
+  }
+}

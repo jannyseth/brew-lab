@@ -25,7 +25,8 @@ export default function PrivacyPage() {
           <li><strong>Account data:</strong> your name, email address, account type (customer or branch owner) and password. Passwords are stored only as a one-way hash; we can never see them.</li>
           <li><strong>Order data:</strong> the drinks you order and customize, your pickup name, notes to the barista, the branch, order status, amounts and payment status.</li>
           <li><strong>Saved drinks:</strong> recipes you choose to save.</li>
-          <li><strong>Branch owner data:</strong> legal name, mobile number, business details, branch names, addresses and hours, sales records, and employee names, positions, pay rates and payroll records that owners enter.</li>
+          <li><strong>Profile pictures:</strong> a photo you upload for your account, or a branch photo uploaded by its owner. Photos are resized and stripped of hidden data such as location before they are stored.</li>
+          <li><strong>Branch owner data:</strong> legal name, mobile number, business details, branch names, addresses and hours, sales records, and employee names, positions, pay rates, payroll records, emails and receiving accounts (bank or e-wallet) that owners enter.</li>
           <li><strong>Security data:</strong> the date and time you sign in, your IP address and browser type, and a record of changes made in your account (our activity log).</li>
         </ul>
         <p>We do not collect payment card details: you pay at the counter. We do not use advertising or tracking cookies.</p>
@@ -38,16 +39,27 @@ export default function PrivacyPage() {
           <li>To prepare your orders, notify the branch, and issue receipts: <em>contract fulfillment.</em></li>
           <li>To verify branch owners, issue and renew branch licenses, and compute sales toward the license quota: <em>contract fulfillment and legitimate interest.</em></li>
           <li>To detect fraud and abuse, investigate security incidents, and keep an activity log: <em>legitimate interest in keeping the platform safe.</em></li>
-          <li>To keep financial records required by tax and accounting laws: <em>legal obligation.</em></li>
+          <li>To keep financial records required by tax and accounting laws, and to compute each branch&apos;s platform fee: <em>legal obligation and contract fulfillment.</em></li>
+          <li>To email payslips that branch owners record to their employees and records inbox: <em>performed for the branch owner.</em></li>
+          <li>
+            <strong>Personalized offers (optional):</strong> if you turn this on at sign-up or in your profile, we analyze your
+            order history (for example, the ingredients you use most and least) to send you offers: <em>your consent, which you
+            can withdraw at any time.</em>
+          </li>
+          <li>
+            <strong>Anonymous coffee insights:</strong> we combine orders from everyone into statistics, such as which
+            ingredients, combinations and times are most popular. These statistics contain no names, emails or other details
+            that identify you, and we may share or sell them to partners such as coffee suppliers: <em>legitimate interest; anonymous data is no longer personal data.</em>
+          </li>
         </ul>
-        <p>We do not sell your personal data, and we do not use it for marketing without your separate consent.</p>
+        <p>We do not sell your personal data. Your name and your individual order history are never part of what we share or sell.</p>
       </section>
 
       <section>
         <h2>4. Who we share it with</h2>
         <ul>
           <li><strong>The branch you order from</strong> sees your pickup name, order details and notes so it can prepare your drinks.</li>
-          <li><strong>Service providers</strong> that process data for us under contract: Vercel (website hosting), Neon (database hosting) and Google (sending email codes). Their servers may be located outside the Philippines; we require them to protect your data to a standard comparable to Philippine law.</li>
+          <li><strong>Service providers</strong> that process data for us under contract: Vercel (website hosting), Neon (database hosting), Cloudflare (photo storage) and Google (sending email codes and documents). Their servers may be located outside the Philippines; we require them to protect your data to a standard comparable to Philippine law.</li>
           <li><strong>Authorities</strong>, only when required by law or a lawful order.</li>
         </ul>
       </section>

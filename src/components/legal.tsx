@@ -1,6 +1,6 @@
 // Shared layout for the Privacy, Terms and Security pages.
 
-export const LEGAL_UPDATED = "October 26, 2026";
+export const LEGAL_UPDATED = "October 27, 2026";
 export const contactEmail = () => process.env.GMAIL_USER || "the email address shown in our sign-up emails";
 
 export function LegalPage({ title, intro, children }: { title: string; intro: string; children: React.ReactNode }) {

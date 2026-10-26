@@ -43,6 +43,9 @@ export const auth = betterAuth({
       role: { type: "string", required: false, defaultValue: "customer", input: false },
       accountType: { type: "string", required: false, defaultValue: "customer", input: true },
       termsAcceptedAt: { type: "date", required: false, input: false },
+      // Optional opt-in at sign-up; can be changed later on the profile page.
+      analyticsConsent: { type: "boolean", required: false, defaultValue: false, input: true },
+      analyticsConsentAt: { type: "date", required: false, input: false },
     },
   },
   hooks: {
@@ -66,7 +69,17 @@ export const auth = betterAuth({
             : accountType === "branch"
               ? "branch_applicant"
               : "customer";
-          return { data: { ...user, accountType, role, termsAcceptedAt: new Date() } };
+          const analyticsConsent = (user as { analyticsConsent?: unknown }).analyticsConsent === true;
+          return {
+            data: {
+              ...user,
+              accountType,
+              role,
+              termsAcceptedAt: new Date(),
+              analyticsConsent,
+              analyticsConsentAt: analyticsConsent ? new Date() : null,
+            },
+          };
         },
         after: async (user) => {
           await logActivity({

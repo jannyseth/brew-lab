@@ -3,8 +3,9 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { branches, branchLicenses, managerApplications, user } from "@/db/schema";
+import { branches, branchLicenses, feeSettlements, managerApplications, user } from "@/db/schema";
 import type { FormState } from "@/components/action-form";
+import { branchMonthlySales, feeFor } from "@/lib/analytics";
 import { logActivity } from "@/lib/audit";
 import { currentLicense, issueLicense } from "@/lib/licenses";
 import { getSession } from "@/lib/session";
@@ -43,7 +44,7 @@ export async function reviewOwner(applicationId: number, decision: Decision, not
     targetId: applicationId,
     details: { ownerId: application.userId, note: clean(note) },
   });
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   return { ok: true, message: `Owner ${decision}.` };
 }
 
@@ -70,7 +71,7 @@ export async function reviewBranch(branchId: number, decision: Decision, note: s
     targetId: branchId,
     details: { name: branch.name, licenseNumber, note: clean(note) },
   });
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   return { ok: true, message: decision === "approved" ? `Branch approved. License ${licenseNumber} issued.` : "Branch rejected." };
 }
 
@@ -125,4 +126,30 @@ export async function revokeLicense(licenseId: number): Promise<FormState> {
   });
   revalidatePath("/admin", "layout");
   return { ok: true, message: `License ${license.licenseNumber} revoked.` };
+}
+
+const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/** Records that a branch paid Brew Lab's fee for a month, with the amounts at that moment. */
+export async function markFeePaid(branchId: number, month: string, paid: boolean): Promise<FormState> {
+  const admin = await getAdmin();
+  if (!admin) return onlyAdmin;
+  if (!Number.isInteger(branchId) || !monthPattern.test(month)) return { ok: false, message: "Invalid month." };
+
+  if (!paid) {
+    await db.delete(feeSettlements).where(and(eq(feeSettlements.branchId, branchId), eq(feeSettlements.month, month)));
+    await logActivity({ ...admin, action: "fee.unpaid", targetType: "branch", targetId: branchId, details: { month } });
+    revalidatePath("/admin/earnings");
+    return { ok: true, message: "Marked as unpaid." };
+  }
+
+  const sales = (await branchMonthlySales(24)).find((r) => r.branch_id === branchId && r.month === month)?.sales ?? 0;
+  const feeCents = feeFor(sales);
+  await db
+    .insert(feeSettlements)
+    .values({ branchId, month, salesCents: sales, feeCents, markedBy: admin.userId })
+    .onConflictDoNothing();
+  await logActivity({ ...admin, action: "fee.paid", targetType: "branch", targetId: branchId, details: { month, feeCents } });
+  revalidatePath("/admin/earnings");
+  return { ok: true, message: "Marked as paid." };
 }

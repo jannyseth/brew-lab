@@ -6,9 +6,9 @@ import { auditLogs } from "@/db/schema";
 import { buttonSecondary, formatDateTime, inputClass } from "@/components/ui";
 import { formatCents } from "@/lib/drink";
 import { requireRole } from "@/lib/session";
-import { AdminNav } from "../admin-nav";
+import { AreaTitle } from "@/components/area-shell";
 
-export const metadata: Metadata = { title: "Admin · Activity log" };
+export const metadata: Metadata = { title: "Activity log" };
 
 const PAGE_SIZE = 100;
 
@@ -39,6 +39,20 @@ const actionLabels: Record<string, string> = {
   "employee.restored": "Restored an employee",
   "payroll.logged": "Logged payroll",
   "payroll.deleted": "Deleted a payroll entry",
+  "payroll.payslip_sent": "Emailed a payslip",
+  "employee.updated": "Updated an employee",
+  "branch.records_email": "Set the payslip records inbox",
+  "branch.photo": "Changed a branch photo",
+  "profile.photo": "Changed their profile picture",
+  "profile.name": "Changed their name",
+  "consent.analytics_given": "Opted in to personalized offers",
+  "consent.analytics_withdrawn": "Opted out of personalized offers",
+  "fee.paid": "Marked a branch fee paid",
+  "fee.unpaid": "Marked a branch fee unpaid",
+  "export.branch_sales": "Downloaded a branch sales sheet",
+  "export.sales": "Downloaded the sales sheet",
+  "export.earnings": "Downloaded the earnings sheet",
+  "export.dataset": "Downloaded the anonymous dataset",
 };
 
 function describeDetails(details: Record<string, unknown>) {
@@ -66,8 +80,8 @@ export default async function ActivityPage({ searchParams }: PageProps<"/admin/a
   const link = (p: number) => `/admin/activity?${new URLSearchParams({ ...(q && { q }), page: String(p) })}`;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12">
-      <AdminNav active="Activity log" subtitle="Who signed in, when, and every change they made. Newest first. Times are Philippine time." />
+    <div>
+      <AreaTitle title="Activity log" subtitle="Who signed in, when, and every change they made. Newest first. Times are Philippine time." />
       <form className="mb-6 flex max-w-lg gap-2">
         <input name="q" defaultValue={q} placeholder="Search by email, action (e.g. order, sign_in) or ID" aria-label="Search the activity log" className={`${inputClass} mt-0`} />
         <button className={buttonSecondary}>Search</button>

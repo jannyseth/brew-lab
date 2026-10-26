@@ -9,6 +9,10 @@
   --accent: #b8622b;
   --accent-soft: #f6e6d8;
   --accent-contrast: #ffffff;
+  /* Chart marks: validated for lightness, contrast and colorblind separation. */
+  --chart-1: #b8622b;
+  --chart-2: #2a78d6;
+  --chart-grid: #ece4da;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -21,6 +25,9 @@
     --accent: #e08a4f;
     --accent-soft: #3a2619;
     --accent-contrast: #17110d;
+    --chart-1: #d5733a;
+    --chart-2: #3987e5;
+    --chart-grid: #33281f;
   }
 }
 
@@ -33,6 +40,9 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-accent-contrast: var(--accent-contrast);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-grid: var(--chart-grid);
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-fraunces);
 }

@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { auditLogs, orders, user } from "@/db/schema";
+import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/components/ui";
 import { requireRole } from "@/lib/session";
-import { AdminNav } from "../admin-nav";
+import { AreaTitle } from "@/components/area-shell";
 
-export const metadata: Metadata = { title: "Admin · Users" };
+export const metadata: Metadata = { title: "Users" };
 
 const roleLabels: Record<string, string> = {
   customer: "Customer",
@@ -35,6 +36,8 @@ export default async function AdminUsersPage() {
       id: user.id,
       name: user.name,
       email: user.email,
+      image: user.image,
+      analyticsConsent: user.analyticsConsent,
       role: user.role,
       verified: user.emailVerified,
       createdAt: user.createdAt,
@@ -50,8 +53,8 @@ export default async function AdminUsersPage() {
   const counts = Object.entries(roleLabels).map(([role, label]) => ({ label, n: users.filter((u) => u.role === role).length }));
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12">
-      <AdminNav active="Users" subtitle="Everyone with an account. Personal data shown here is for administration only." />
+    <div>
+      <AreaTitle title="Users" subtitle="Everyone with an account. Personal data shown here is for administration only." />
       <div className="mb-6 flex flex-wrap gap-3 text-sm">
         {counts.map((c) => (
           <span key={c.label} className="rounded-full border border-line bg-card px-3 py-1">
@@ -74,10 +77,16 @@ export default async function AdminUsersPage() {
             {users.map((u) => (
               <tr key={u.id} className="border-b border-line last:border-0">
                 <td className="px-4 py-2">
-                  <span className="font-medium">{u.name || "—"}</span>
-                  <span className="block text-xs text-muted">
-                    {u.email}
-                    {!u.verified && " · email not confirmed"}
+                  <span className="flex items-center gap-3">
+                    <Avatar src={u.image} name={u.name || u.email} size={32} />
+                    <span>
+                      <span className="font-medium">{u.name || "—"}</span>
+                      <span className="block text-xs text-muted">
+                        {u.email}
+                        {!u.verified && " · email not confirmed"}
+                        {u.analyticsConsent && " · offers opt-in"}
+                      </span>
+                    </span>
                   </span>
                 </td>
                 <td className="px-4 py-2">{roleLabels[u.role] ?? u.role}</td>

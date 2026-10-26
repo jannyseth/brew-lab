@@ -2,12 +2,14 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { db } from "@/db";
 import { branches, employees, managerApplications, orders, payrollEntries } from "@/db/schema";
 import type { FormState } from "@/components/action-form";
 import { logActivity } from "@/lib/audit";
 import { authorizeBranch } from "@/lib/branch-access";
+import { emailPayslip } from "@/lib/payslips";
 import { getSession } from "@/lib/session";
 
 const fail = (message: string): FormState => ({ ok: false, message });
@@ -49,7 +51,7 @@ export async function applyAsManager(_: FormState, data: FormData): Promise<Form
     targetType: "application",
     targetId: application.id,
   });
-  revalidatePath("/branch");
+  revalidatePath("/branch", "layout");
   return { ok: true, message: "Application sent. The admin will review it." };
 }
 
@@ -78,7 +80,7 @@ export async function createBranch(_: FormState, data: FormData): Promise<FormSt
     targetId: branch.id,
     details: { name: parsed.data.name },
   });
-  revalidatePath("/branch");
+  revalidatePath("/branch", "layout");
   return { ok: true, message: "Branch submitted. Customers will see it once the admin approves it." };
 }
 
@@ -106,7 +108,7 @@ export async function advanceOrder(orderId: number): Promise<FormState> {
     .set({ status: next })
     .where(and(eq(orders.id, orderId), eq(orders.status, order.status)))
     .returning({ id: orders.id });
-  revalidatePath(`/branch/${order.branchId}`);
+  revalidatePath(`/branch/${order.branchId}`, "layout");
   if (updated.length === 0) return fail("Someone else just updated this order. Refresh to see it.");
   await logActivity({ ...viewer, action: "order.status", targetType: "order", targetId: orderId, details: { from: order.status, to: next } });
   return { ok: true, message: `Order #${orderId} is now ${next}.` };
@@ -119,7 +121,7 @@ export async function cancelOrder(orderId: number): Promise<FormState> {
   if (order.status === "completed" || order.status === "cancelled") return fail("This order is already finished.");
   await db.update(orders).set({ status: "cancelled", paidAt: null }).where(eq(orders.id, orderId));
   await logActivity({ ...viewer, action: "order.cancelled", targetType: "order", targetId: orderId, details: { by: "branch" } });
-  revalidatePath(`/branch/${order.branchId}`);
+  revalidatePath(`/branch/${order.branchId}`, "layout");
   return { ok: true, message: `Order #${orderId} was cancelled.` };
 }
 
@@ -139,28 +141,53 @@ export async function setOrderPaid(orderId: number, paid: boolean): Promise<Form
     targetId: orderId,
     details: { totalCents: order.totalCents },
   });
-  revalidatePath(`/branch/${order.branchId}`);
+  revalidatePath(`/branch/${order.branchId}`, "layout");
   return { ok: true, message: paid ? "Marked as paid." : "Marked as unpaid." };
 }
 
 const money = z.coerce.number().min(0).max(10_000_000);
 
+const PAYOUT_METHODS = ["Bank transfer", "GCash", "Maya", "Cash"] as const;
+
+const employeeSchema = z
+  .object({
+    name: z.string().trim().min(2).max(80),
+    position: z.string().trim().min(2).max(60),
+    hourlyRate: money,
+    email: z.union([z.literal(""), z.email().max(120)]),
+    payoutMethod: z.union([z.literal(""), z.enum(PAYOUT_METHODS)]),
+    payoutAccountName: z.string().trim().max(80),
+    payoutAccountNumber: z.string().trim().max(40).regex(/^[0-9 -]*$/, "digits only"),
+  })
+  .transform((e) => ({
+    name: e.name,
+    position: e.position,
+    hourlyRateCents: Math.round(e.hourlyRate * 100),
+    email: e.email || null,
+    payoutMethod: e.payoutMethod || null,
+    payoutAccountName: e.payoutAccountName || null,
+    payoutAccountNumber: e.payoutAccountNumber.replace(/[ -]/g, "") || null,
+  }));
+
+const employeeFields = (data: FormData) => ({
+  name: data.get("name") ?? "",
+  position: data.get("position") ?? "",
+  hourlyRate: data.get("hourlyRate") ?? "",
+  email: data.get("email") ?? "",
+  payoutMethod: data.get("payoutMethod") ?? "",
+  payoutAccountName: data.get("payoutAccountName") ?? "",
+  payoutAccountNumber: data.get("payoutAccountNumber") ?? "",
+});
+
 export async function addEmployee(branchId: number, _: FormState, data: FormData): Promise<FormState> {
   const access = await authorizeBranch(branchId);
   if (!access) return notAllowed;
-  const parsed = z
-    .object({ name: z.string().trim().min(2).max(80), position: z.string().trim().min(2).max(60), hourlyRate: money })
-    .safeParse(Object.fromEntries(data));
-  if (!parsed.success) return fail("Please enter a name, position and hourly rate.");
+  const parsed = employeeSchema.safeParse(employeeFields(data));
+  if (!parsed.success) return fail("Check the name, position, rate, email and account number (digits only).");
 
   const [employee] = await db
     .insert(employees)
-    .values({
-      branchId,
-      name: parsed.data.name,
-      position: parsed.data.position,
-      hourlyRateCents: Math.round(parsed.data.hourlyRate * 100),
-    })
+    .values({ branchId, ...parsed.data })
     .returning({ id: employees.id });
   await logActivity({
     ...access.viewer,
@@ -171,6 +198,34 @@ export async function addEmployee(branchId: number, _: FormState, data: FormData
   });
   revalidatePath(`/branch/${branchId}/payroll`);
   return { ok: true, message: `${parsed.data.name} added.` };
+}
+
+export async function updateEmployee(branchId: number, employeeId: number, _: FormState, data: FormData): Promise<FormState> {
+  const access = await authorizeBranch(branchId);
+  if (!access) return notAllowed;
+  const parsed = employeeSchema.safeParse(employeeFields(data));
+  if (!parsed.success) return fail("Check the name, position, rate, email and account number (digits only).");
+  const updated = await db
+    .update(employees)
+    .set(parsed.data)
+    .where(and(eq(employees.id, employeeId), eq(employees.branchId, branchId)))
+    .returning({ id: employees.id });
+  if (updated.length === 0) return fail("Employee not found.");
+  await logActivity({ ...access.viewer, action: "employee.updated", targetType: "employee", targetId: employeeId, details: { branchId } });
+  revalidatePath(`/branch/${branchId}/payroll`);
+  return { ok: true, message: "Saved." };
+}
+
+/** The inbox that gets a copy of every payslip, e.g. the owner's accountant. */
+export async function setRecordsEmail(branchId: number, _: FormState, data: FormData): Promise<FormState> {
+  const access = await authorizeBranch(branchId);
+  if (!access) return notAllowed;
+  const parsed = z.union([z.literal(""), z.email().max(120)]).safeParse(String(data.get("recordsEmail") ?? "").trim());
+  if (!parsed.success) return fail("Enter a valid email address, or leave it empty.");
+  await db.update(branches).set({ recordsEmail: parsed.data || null }).where(eq(branches.id, branchId));
+  await logActivity({ ...access.viewer, action: "branch.records_email", targetType: "branch", targetId: branchId });
+  revalidatePath(`/branch/${branchId}/payroll`);
+  return { ok: true, message: parsed.data ? "Payslip copies will go to this inbox." : "Records inbox removed." };
 }
 
 export async function setEmployeeActive(branchId: number, employeeId: number, active: boolean): Promise<FormState> {
@@ -237,8 +292,10 @@ export async function logPayroll(branchId: number, _: FormState, data: FormData)
     targetId: row.id,
     details: { branchId, employeeId: entry.employeeId, amountCents },
   });
+  // Email the payslip PDF to the employee and the records inbox once the response is sent.
+  after(() => emailPayslip(row.id));
   revalidatePath(`/branch/${branchId}/payroll`);
-  return { ok: true, message: "Payroll entry logged." };
+  return { ok: true, message: "Payroll entry logged. The payslip is being emailed." };
 }
 
 export async function deletePayrollEntry(branchId: number, entryId: number): Promise<FormState> {
@@ -259,4 +316,19 @@ export async function deletePayrollEntry(branchId: number, entryId: number): Pro
   }
   revalidatePath(`/branch/${branchId}/payroll`);
   return { ok: true, message: "Entry deleted." };
+}
+
+export async function resendPayslip(branchId: number, entryId: number): Promise<FormState> {
+  const access = await authorizeBranch(branchId);
+  if (!access) return notAllowed;
+  const [entry] = await db
+    .select({ id: payrollEntries.id })
+    .from(payrollEntries)
+    .where(and(eq(payrollEntries.id, entryId), eq(payrollEntries.branchId, branchId)));
+  if (!entry) return fail("Entry not found.");
+  const sentTo = await emailPayslip(entryId);
+  if (sentTo.length === 0) return fail("Add the employee's email or a records inbox first.");
+  await logActivity({ ...access.viewer, action: "payroll.payslip_sent", targetType: "payroll", targetId: entryId, details: { to: sentTo.length } });
+  revalidatePath(`/branch/${branchId}/payroll`);
+  return { ok: true, message: `Payslip sent to ${sentTo.join(", ")}.` };
 }

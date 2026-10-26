@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { branches, orderItems, orders } from "@/db/schema";
 import { formatCents } from "@/lib/drink";
 import { PrintButton } from "./print-button";
-import { formatDateTime } from "./ui";
+import { buttonPrimary, formatDateTime } from "./ui";
 
 /** Loads everything a receipt needs. Callers must check who may see the order first. */
 export async function loadReceipt(orderId: number) {
@@ -32,8 +32,11 @@ export function Receipt({
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
-      <div className="mb-6 flex justify-end print:hidden">
-        <PrintButton />
+      <div className="mb-6 flex justify-end gap-2 print:hidden">
+        <a href={`/api/receipts/${order.id}`} download className={buttonPrimary}>
+          Download PDF
+        </a>
+        <PrintButton label="Print" />
       </div>
       <article className="rounded-2xl border border-line bg-card p-6 font-mono text-sm print:border-0 print:p-0">
         <header className="text-center">

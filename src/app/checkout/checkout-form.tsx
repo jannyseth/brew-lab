@@ -8,7 +8,7 @@ import { useCart } from "@/components/cart";
 import { buttonPrimary, cardClass, inputClass } from "@/components/ui";
 import { formatCents } from "@/lib/drink";
 
-type Branch = { id: number; name: string; address: string; hours: string };
+type Branch = { id: number; name: string; address: string; hours: string; imageUrl: string | null };
 
 export function CheckoutForm({ branches, defaultName }: { branches: Branch[]; defaultName: string }) {
   const router = useRouter();
@@ -74,9 +74,17 @@ export function CheckoutForm({ branches, defaultName }: { branches: Branch[]; de
                 checked={branchId === b.id}
                 onChange={() => setBranchId(b.id)}
               />
-              <span className="font-medium">{b.name}</span>
-              <span className="block text-sm text-muted">
-                {b.address} · {b.hours}
+              <span className="flex items-center gap-4">
+                {b.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={b.imageUrl} alt="" className="aspect-[1200/630] w-24 shrink-0 rounded-lg object-cover" />
+                )}
+                <span>
+                  <span className="font-medium">{b.name}</span>
+                  <span className="block text-sm text-muted">
+                    {b.address} · {b.hours}
+                  </span>
+                </span>
               </span>
             </label>
           ))}

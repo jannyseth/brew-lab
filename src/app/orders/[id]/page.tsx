@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { branches, orderItems, orders } from "@/db/schema";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { Badge, cardClass, formatDateTime } from "@/components/ui";
+import { Badge, buttonPrimary, cardClass, formatDateTime } from "@/components/ui";
 import { formatCents } from "@/lib/drink";
 import { requireRole } from "@/lib/session";
 import { CancelOrderButton } from "./cancel-order-button";
@@ -79,8 +79,11 @@ export default async function OrderPage({ params }: PageProps<"/orders/[id]">) {
         <span className="font-display text-2xl font-semibold tabular-nums">{formatCents(order.order.totalCents)}</span>
       </div>
       <div className="mt-8 flex flex-wrap items-center gap-4">
-        <Link href={`/orders/${order.order.id}/receipt`} className="font-medium text-accent hover:underline">
-          View receipt
+        <a href={`/api/receipts/${order.order.id}`} download className={buttonPrimary}>
+          Download receipt (PDF)
+        </a>
+        <Link href={`/orders/${order.order.id}/receipt`} className="text-sm text-muted hover:text-accent">
+          View or print
         </Link>
       </div>
       {status === "placed" && <CancelOrderButton orderId={order.order.id} />}

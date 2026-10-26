@@ -7,10 +7,10 @@ import { QuotaProgress } from "@/components/quota-progress";
 import { Badge, cardClass, formatDate } from "@/components/ui";
 import { branchSalesBetween, currentLicense, settleExpiredLicenses } from "@/lib/licenses";
 import { requireRole } from "@/lib/session";
-import { AdminNav } from "../admin-nav";
+import { AreaTitle } from "@/components/area-shell";
 import { ReissueButton, RevokeButton, SuspendButton } from "../review-buttons";
 
-export const metadata: Metadata = { title: "Admin · Branches" };
+export const metadata: Metadata = { title: "Branches" };
 
 export default async function AdminBranchesPage() {
   await requireRole(["super_admin"], "/admin/branches");
@@ -31,8 +31,8 @@ export default async function AdminBranchesPage() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12">
-      <AdminNav active="Branches" subtitle="Every branch, its owner and its license. Licenses renew yearly when the branch sells ₱100,000." />
+    <div>
+      <AreaTitle title="Branches" subtitle="Every branch, its owner and its license. Licenses renew yearly when the branch sells ₱100,000." />
       {list.length === 0 ? (
         <p className="text-muted">No branches yet.</p>
       ) : (

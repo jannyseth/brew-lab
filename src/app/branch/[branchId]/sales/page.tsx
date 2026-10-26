@@ -3,7 +3,7 @@ import { and, desc, eq, isNotNull, ne, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { orderItems, orders } from "@/db/schema";
-import { cardClass } from "@/components/ui";
+import { buttonSecondary, cardClass } from "@/components/ui";
 import { getManagedBranch } from "@/lib/branch-access";
 import { formatCents } from "@/lib/drink";
 import { requireUser } from "@/lib/session";
@@ -68,8 +68,16 @@ export default async function SalesPage({ params }: PageProps<"/branch/[branchId
   ];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12">
-      <BranchHeader branch={branch} active="Sales" />
+    <div>
+      <BranchHeader
+        branch={branch}
+        active="Sales"
+        actions={
+          <a href={`/api/exports/branch/${branch.id}/sales`} download className={buttonSecondary}>
+            Download sales sheet (.xlsx)
+          </a>
+        }
+      />
       <p className="mb-6 text-sm text-muted">
         Counts orders marked as paid. Days follow the {process.env.NEXT_PUBLIC_TIMEZONE || "UTC"} timezone.
       </p>
