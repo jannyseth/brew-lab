@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { saveDrink } from "@/app/actions/customer";
 import { MAX_QUANTITY, useCart } from "@/components/cart";
-import { CupArt } from "@/components/cup-art";
-import { cupVisual } from "@/lib/cup-visual";
+import { AnimatedCup } from "@/components/animated-cup";
+import { sceneTarget } from "@/lib/cup-scene";
 import {
   describeSelection,
   formatCents,
@@ -75,6 +75,8 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
   const [reached, setReached] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [phase, setPhase] = useState<Phase>("build");
+  // True while ingredients are still pouring, mixing or being prepared.
+  const [cupBusy, setCupBusy] = useState(false);
   const [bump, setBump] = useState<{ slug: string; n: number; kind: "pop" | "shake" } | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const bumps = useRef(0);
@@ -103,7 +105,6 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
   const current = STATIONS[station];
   const missing = missingFor(station);
   const inspecting = current.id === "inspect";
-  const visual = cupVisual(drink, selection);
   const nutrition = estimateNutrition(drink, selection);
   const summary = describeSelection(drink, selection);
 
@@ -225,7 +226,13 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
             aria-label={summary.length ? `Your cup: ${summary.join(", ")}` : "An empty cup"}
             role="img"
           >
-            <CupArt visual={visual} animate covered={inspecting || phase !== "build"} className="h-full w-auto drop-shadow-md" />
+            <AnimatedCup
+              target={sceneTarget(selection)}
+              stirKey={station}
+              covered={inspecting || phase !== "build"}
+              onBusyChange={setCupBusy}
+              className="h-full w-auto drop-shadow-md"
+            />
             {phase !== "build" && <Box />}
           </div>
           {summary.length === 0 && (
@@ -310,11 +317,11 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
                 </span>
                 <button
                   type="button"
-                  disabled={!price.ok || phase !== "build"}
+                  disabled={!price.ok || phase !== "build" || cupBusy}
                   onClick={order}
                   className="whitespace-nowrap rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-contrast shadow-sm transition hover:opacity-90 active:scale-95 disabled:opacity-60"
                 >
-                  {phase === "build" ? `Add to order · ${price.ok ? formatCents(price.totalCents * quantity) : ""}` : "Boxing it up…"}
+                  {phase !== "build" ? "Boxing it up…" : cupBusy ? "Finishing up…" : `Add to order · ${price.ok ? formatCents(price.totalCents * quantity) : ""}`}
                 </button>
               </div>
             )}
