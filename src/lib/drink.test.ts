@@ -3,6 +3,7 @@ import {
   describeSelection,
   initialSelection,
   normalizeSelection,
+  priceBreakdown,
   priceDrink,
   type DrinkConfig,
 } from "./drink";
@@ -126,5 +127,20 @@ describe("describeSelection", () => {
       "2 × Espresso shot",
       "2 × Vanilla",
     ]);
+  });
+});
+
+describe("priceBreakdown", () => {
+  it("lists the base and each extra, adding up to the price", () => {
+    const selection = { medium: 1, hot: 1, "espresso-shot": 3, "vanilla-syrup": 4 };
+    const lines = priceBreakdown(latte, selection);
+    expect(lines).toEqual([
+      { label: "Latte", cents: 425 },
+      { label: "Medium", cents: 50 },
+      { label: "Espresso shot", cents: 100 },
+      { label: "2 × Vanilla", cents: 50 },
+    ]);
+    const price = priceDrink(latte, selection);
+    expect(price.ok && price.totalCents).toBe(lines.reduce((sum, l) => sum + l.cents, 0));
   });
 });

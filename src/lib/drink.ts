@@ -129,6 +129,28 @@ export function priceDrink(drink: DrinkConfig, selection: Selection): PriceResul
   return errors.length > 0 ? { ok: false, errors } : { ok: true, totalCents };
 }
 
+/**
+ * The price as receipt-style lines: the base drink, then every option that
+ * costs extra. Uses the same charging rules as priceDrink(), so the lines
+ * always add up to its total.
+ */
+export function priceBreakdown(drink: DrinkConfig, selection: Selection): { label: string; cents: number }[] {
+  const lines = [{ label: drink.name, cents: drink.basePriceCents }];
+  for (const group of visibleGroups(drink, selection)) {
+    for (const option of group.options) {
+      const qty = selection[option.slug] ?? 0;
+      if (qty <= 0 || option.priceDeltaCents <= 0) continue;
+      const charged = group.selection === "multi" ? Math.max(0, qty - (drink.defaults[option.slug] ?? 0)) : qty;
+      if (charged === 0) continue;
+      lines.push({
+        label: charged > 1 ? `${charged} × ${option.name}` : option.name,
+        cents: option.priceDeltaCents * charged,
+      });
+    }
+  }
+  return lines;
+}
+
 /** Human-readable summary, e.g. ["Medium", "Iced", "Oat milk", "3 × Vanilla"]. */
 export function describeSelection(drink: DrinkConfig, selection: Selection): string[] {
   return visibleGroups(drink, selection).flatMap((group) =>

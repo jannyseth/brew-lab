@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDrink, getDrinkSlugs } from "@/lib/menu";
 import { DrinkBuilder } from "./drink-builder";
+import { GameBuilder } from "./game-builder";
 
 export async function generateStaticParams() {
   const slugs = await getDrinkSlugs();
@@ -19,6 +20,8 @@ export default async function DrinkPage({ params }: PageProps<"/menu/[slug]">) {
   const { slug } = await params;
   const drink = await getDrink(slug);
   if (!drink) notFound();
+  // Build Your Own is played as a game; preset drinks keep the simple builder.
+  if (drink.isCustom) return <GameBuilder drink={drink} />;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
