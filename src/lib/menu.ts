@@ -1,8 +1,8 @@
 import "server-only";
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
-import { categories, menuItemOptionGroups, menuItems, optionGroups, options } from "@/db/schema";
+import { categories, menuItemOptionGroups, menuItems, optionGroups, options, orderItems, orders } from "@/db/schema";
 import type { DrinkConfig } from "./drink";
 
 // Menu reads are cached for hours and tagged "menu" so the admin screens
@@ -71,4 +71,21 @@ export async function getDrink(slug: string): Promise<DrinkConfig | null> {
       };
     }),
   };
+}
+
+/** The three most ordered drinks of all time, for "Bestseller" tags on the menu. */
+export async function getBestsellers() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("menu");
+
+  const rows = await db
+    .select({ name: orderItems.drinkName, cups: sql<number>`sum(${orderItems.quantity})::int` })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .where(ne(orders.status, "cancelled"))
+    .groupBy(orderItems.drinkName)
+    .orderBy(desc(sql`2`))
+    .limit(3);
+  return rows.map((r) => r.name);
 }

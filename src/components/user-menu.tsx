@@ -10,7 +10,7 @@ const menuLinks = (
     <Link href="/menu" className="hover:text-accent">
       Menu
     </Link>
-    <Link href="/menu/build-your-own" className="hover:text-accent">
+    <Link href="/menu/build-your-own" className="hidden hover:text-accent sm:inline">
       Build your own
     </Link>
   </>
