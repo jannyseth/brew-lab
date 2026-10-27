@@ -32,7 +32,11 @@ export function SignInForm() {
       await authClient.emailOtp.sendVerificationOtp({ email, type: "email-verification" });
       setStep("verify");
     } else {
-      setError(error.status === 429 ? "Too many attempts. Wait a minute and try again." : "Wrong email or password.");
+      setError(
+        error.status === 429
+          ? "Too many attempts. Wait a minute and try again."
+          : "Wrong email or password. Accounts made before passwords were introduced need to set one first: use “Forgot password?” below.",
+      );
     }
   }
 
