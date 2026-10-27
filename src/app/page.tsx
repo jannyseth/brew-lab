@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { getSession } from "@/lib/session";
-import { CupPreview } from "@/components/cup-preview";
 
 export default function Home() {
   return (
@@ -20,7 +19,22 @@ export default function Home() {
         </Suspense>
       </div>
       <div className="flex justify-center">
-        <CupPreview size="large" iced={false} shots={2} milk syrup topping="whip" />
+        {/* A fanned stack of menu photos */}
+        <div className="relative h-80 w-72 md:h-96 md:w-80" aria-hidden>
+          {[
+            { src: "/menu/cold-brew.webp", className: "-rotate-6 -translate-x-16 translate-y-6" },
+            { src: "/menu/mocha.webp", className: "rotate-6 translate-x-16 translate-y-8" },
+            { src: "/menu/latte.webp", className: "z-10" },
+          ].map((photo) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={photo.src}
+              src={photo.src}
+              alt=""
+              className={`absolute inset-x-0 top-0 mx-auto aspect-square w-60 rounded-3xl object-cover shadow-xl ring-4 ring-card md:w-72 ${photo.className}`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

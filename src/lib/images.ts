@@ -1,6 +1,7 @@
-// Keys (in the images table) look like "avatars/<userId>/<uuid>.webp" or "branches/<id>/<uuid>.webp".
+// Keys (in the images table) look like "avatars/<userId>/<uuid>.webp", "branches/<id>/<uuid>.webp"
+// or "menu/<drink-slug>/<uuid>.webp".
 // Each upload gets a new random key, so served images can be cached forever.
-export const IMAGE_KEY_PATTERN = /^(avatars\/[A-Za-z0-9_-]+|branches\/\d+)\/[0-9a-f-]{36}\.webp$/;
+export const IMAGE_KEY_PATTERN = /^(avatars\/[A-Za-z0-9_-]+|branches\/\d+|menu\/[a-z0-9-]+)\/[0-9a-f-]{36}\.webp$/;
 
 export const imageUrl = (key: string | null | undefined) => (key ? `/api/images/${key}` : null);
 

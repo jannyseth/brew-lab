@@ -1,12 +1,13 @@
 "use server";
 
 import { and, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { db } from "@/db";
-import { branches, branchLicenses, feeSettlements, managerApplications, user } from "@/db/schema";
+import { branches, branchLicenses, feeSettlements, managerApplications, menuItems, user } from "@/db/schema";
 import type { FormState } from "@/components/action-form";
 import { branchMonthlySales, feeFor } from "@/lib/analytics";
 import { logActivity } from "@/lib/audit";
+import { deleteImage } from "@/lib/image-store";
 import { currentLicense, issueLicense } from "@/lib/licenses";
 import { getSession } from "@/lib/session";
 
@@ -152,4 +153,18 @@ export async function markFeePaid(branchId: number, month: string, paid: boolean
   await logActivity({ ...admin, action: "fee.paid", targetType: "branch", targetId: branchId, details: { month, feeCents } });
   revalidatePath("/admin/earnings");
   return { ok: true, message: "Marked as paid." };
+}
+
+/** Goes back to the starter photo for a drink, deleting the uploaded one. */
+export async function resetMenuPhoto(slug: string): Promise<FormState> {
+  const admin = await getAdmin();
+  if (!admin) return onlyAdmin;
+  const [item] = await db.select({ key: menuItems.imageKey }).from(menuItems).where(eq(menuItems.slug, slug));
+  if (!item?.key) return { ok: false, message: "This drink already uses its starter photo." };
+  await db.update(menuItems).set({ imageKey: null }).where(eq(menuItems.slug, slug));
+  await deleteImage(item.key);
+  await logActivity({ ...admin, action: "menu.photo_reset", targetType: "menu_item", targetId: slug });
+  updateTag("menu");
+  revalidatePath("/admin/menu");
+  return { ok: true, message: "Back to the starter photo." };
 }

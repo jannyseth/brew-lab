@@ -11,11 +11,11 @@ export function ImageUpload({
   hint,
   shape = "round",
 }: {
-  target: { kind: "avatar" } | { kind: "branch"; id: number };
+  target: { kind: "avatar" } | { kind: "branch"; id: number } | { kind: "menu"; slug: string };
   currentUrl: string | null;
   label: string;
   hint?: string;
-  shape?: "round" | "wide";
+  shape?: "round" | "wide" | "square";
 }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
@@ -28,6 +28,7 @@ export function ImageUpload({
     body.set("file", file);
     body.set("target", target.kind);
     if (target.kind === "branch") body.set("id", String(target.id));
+    if (target.kind === "menu") body.set("slug", target.slug);
     const res = await fetch("/api/images/upload", { method: "POST", body }).catch(() => null);
     const data = res ? await res.json().catch(() => ({})) : {};
     if (!res?.ok) return setStatus({ error: data.error ?? "Upload failed. Please try again." });
@@ -39,7 +40,9 @@ export function ImageUpload({
   return (
     <div className="flex items-center gap-4">
       <div
-        className={`shrink-0 overflow-hidden bg-accent-soft ${shape === "round" ? "h-20 w-20 rounded-full" : "aspect-[1200/630] w-40 rounded-xl"}`}
+        className={`shrink-0 overflow-hidden bg-accent-soft ${
+          shape === "round" ? "h-20 w-20 rounded-full" : shape === "square" ? "h-28 w-28 rounded-xl" : "aspect-[1200/630] w-40 rounded-xl"
+        }`}
       >
         {preview && (
           // eslint-disable-next-line @next/next/no-img-element

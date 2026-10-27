@@ -27,6 +27,8 @@ export type DrinkConfig = {
   isCustom: boolean;
   defaults: Record<string, number>;
   groups: DrinkGroup[];
+  /** Menu photo URL, if any. */
+  photoUrl?: string | null;
 };
 
 /** Option slug -> quantity. */

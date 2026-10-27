@@ -28,6 +28,7 @@ async function AdminSidebar() {
           links: [
             { href: "/admin/approvals", label: "Approvals", badge: owners.n + pendingBranches.n },
             { href: "/admin/branches", label: "Branches" },
+            { href: "/admin/menu", label: "Menu photos" },
             { href: "/admin/users", label: "Users" },
             { href: "/admin/activity", label: "Activity log" },
           ],

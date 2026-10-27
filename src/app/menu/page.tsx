@@ -1,45 +1,56 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { formatCents } from "@/lib/drink";
-import { getMenu } from "@/lib/menu";
+import { describeSelection, initialSelection, priceDrink } from "@/lib/drink";
+import { getDrink, getMenu } from "@/lib/menu";
+import { MenuGrid, type MenuCard } from "./menu-grid";
 
 export const metadata: Metadata = { title: "Menu" };
 
 export default async function MenuPage() {
   const menu = await getMenu();
 
-  return (
-    <div className="mx-auto max-w-5xl px-4 py-12">
-      <h1 className="font-display text-4xl font-semibold tracking-tight">Menu</h1>
-      <p className="mt-2 text-muted">Every drink can be customized. Prices shown are for a small.</p>
+  // Each card carries its drink's standard recipe, so "+" can add it in one tap.
+  const sections = await Promise.all(
+    menu.map(async (category) => ({
+      id: category.slug,
+      name: category.name,
+      cards: (
+        await Promise.all(
+          category.items.map(async (item): Promise<MenuCard | null> => {
+            const drink = await getDrink(item.slug);
+            if (!drink) return null;
+            const selection = initialSelection(drink);
+            const price = priceDrink(drink, selection);
+            const icedOnly = drink.groups.find((g) => g.slug === "temperature")?.options.every((o) => o.slug === "iced");
+            return {
+              slug: drink.slug,
+              name: drink.name,
+              description: drink.description,
+              photoUrl: drink.photoUrl ?? null,
+              isCustom: drink.isCustom,
+              selection,
+              summary: describeSelection(drink, selection).join(" · "),
+              priceCents: drink.isCustom ? drink.basePriceCents : price.ok ? price.totalCents : drink.basePriceCents,
+              tag: drink.isCustom ? "Make it yours" : icedOnly ? "Iced" : null,
+            };
+          }),
+        )
+      ).filter((c): c is MenuCard => c !== null),
+    })),
+  );
 
-      {menu.map((category) => (
-        <section key={category.id} className="mt-10">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-accent">{category.name}</h2>
-          <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {category.items.map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={`/menu/${item.slug}`}
-                  className="flex h-full flex-col rounded-2xl border border-line bg-card p-5 transition hover:border-accent hover:shadow-sm"
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <h3 className="font-display text-xl font-semibold">{item.name}</h3>
-                    <span className="shrink-0 text-sm font-medium tabular-nums">
-                      {item.isCustom ? "from " : ""}
-                      {formatCents(item.basePriceCents)}
-                    </span>
-                  </div>
-                  <p className="mt-2 flex-1 text-sm text-muted">{item.description}</p>
-                  <span className="mt-4 text-sm font-medium text-accent">
-                    {item.isCustom ? "Start building →" : "Customize →"}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+  return (
+    <div className="pb-28">
+      <section className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-4 px-4 pb-2 pt-8">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-widest text-accent">Order ahead · pay at pickup</p>
+          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">Menu</h1>
+        </div>
+        <Link href="/menu/build-your-own" className="text-sm font-semibold text-accent hover:underline">
+          Build your own →
+        </Link>
+      </section>
+      <MenuGrid sections={sections} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
 import { categories, menuItemOptionGroups, menuItems, optionGroups, options } from "@/db/schema";
 import type { DrinkConfig } from "./drink";
+import { menuPhotoUrl } from "./menu-photos";
 
 // Menu reads are cached for hours and tagged "menu" so the admin screens
 // (phase 3) can refresh them with updateTag("menu"). This keeps database
@@ -42,7 +43,8 @@ export async function getDrink(slug: string): Promise<DrinkConfig | null> {
 
   const links = await db.select().from(menuItemOptionGroups).where(eq(menuItemOptionGroups.menuItemId, item.id));
   const groupIds = links.map((l) => l.groupId);
-  if (groupIds.length === 0) return { ...item, groups: [] };
+  const photoUrl = menuPhotoUrl(item.slug, item.imageKey);
+  if (groupIds.length === 0) return { ...item, photoUrl, groups: [] };
 
   const [groupRows, optionRows] = await Promise.all([
     db.select().from(optionGroups).where(inArray(optionGroups.id, groupIds)).orderBy(asc(optionGroups.sortOrder)),
@@ -56,6 +58,7 @@ export async function getDrink(slug: string): Promise<DrinkConfig | null> {
     basePriceCents: item.basePriceCents,
     isCustom: item.isCustom,
     defaults: item.defaults,
+    photoUrl,
     groups: groupRows.map((g) => {
       const allowed = links.find((l) => l.groupId === g.id)?.allowedOptionSlugs;
       return {

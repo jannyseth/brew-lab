@@ -22,6 +22,7 @@ const legal = [
   { href: "/privacy", label: "Privacy Notice" },
   { href: "/terms", label: "Terms of Use" },
   { href: "/security", label: "Safety & Security" },
+  { href: "/credits", label: "Photo credits" },
 ];
 
 export function SiteFooter() {
