@@ -59,7 +59,7 @@ export default function PrivacyPage() {
         <h2>4. Who we share it with</h2>
         <ul>
           <li><strong>The branch you order from</strong> sees your pickup name, order details and notes so it can prepare your drinks.</li>
-          <li><strong>Service providers</strong> that process data for us under contract: Vercel (website hosting), Neon (database hosting), Cloudflare (photo storage) and Google (sending email codes and documents). Their servers may be located outside the Philippines; we require them to protect your data to a standard comparable to Philippine law.</li>
+          <li><strong>Service providers</strong> that process data for us under contract: Vercel (website hosting), Neon (database and photo storage) and Google (sending email codes and documents). Their servers may be located outside the Philippines; we require them to protect your data to a standard comparable to Philippine law.</li>
           <li><strong>Authorities</strong>, only when required by law or a lawful order.</li>
         </ul>
       </section>

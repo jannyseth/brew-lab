@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { branches, user } from "@/db/schema";
 import { logActivity } from "@/lib/audit";
 import { imageUrl, keyFromUrl } from "@/lib/images";
-import { deleteObject, putObject, r2Configured } from "@/lib/r2";
+import { deleteImage, putImage } from "@/lib/image-store";
 import { getSession } from "@/lib/session";
 
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -19,7 +19,6 @@ const json = (body: object, status = 200) => Response.json(body, { status });
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return json({ error: "Please sign in first." }, 401);
-  if (!r2Configured) return json({ error: "Picture uploads aren't set up yet. Please try again later." }, 503);
 
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
@@ -48,16 +47,16 @@ export async function POST(request: Request) {
     const image = sharp(Buffer.from(await file.arrayBuffer()), { limitInputPixels: 40_000_000 }).rotate();
     webp = await (branchId === null
       ? image.resize(256, 256, { fit: "cover" })
-      : image.resize(1200, 630, { fit: "cover" })
+      : image.resize(960, 504, { fit: "cover" })
     )
-      .webp({ quality: 82 })
+      .webp({ quality: 78 })
       .toBuffer();
   } catch {
     return json({ error: "That file isn't a supported image. Use a JPG, PNG or WebP." }, 400);
   }
 
   const key = branchId === null ? `avatars/${session.user.id}/${crypto.randomUUID()}.webp` : `branches/${branchId}/${crypto.randomUUID()}.webp`;
-  await putObject(key, webp, "image/webp");
+  await putImage(key, webp, "image/webp");
 
   let oldKey: string | null;
   if (branchId === null) {
@@ -70,7 +69,7 @@ export async function POST(request: Request) {
     await db.update(branches).set({ imageKey: key }).where(eq(branches.id, branchId));
     revalidatePath("/branch", "layout");
   }
-  if (oldKey) await deleteObject(oldKey);
+  if (oldKey) await deleteImage(oldKey);
 
   await logActivity({
     userId: session.user.id,

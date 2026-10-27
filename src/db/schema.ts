@@ -37,7 +37,7 @@ export const menuItems = pgTable("menu_items", {
     .notNull()
     .references(() => categories.id),
   basePriceCents: integer("base_price_cents").notNull(),
-  // R2 object key for the drink photo (added in phase 3).
+  // Key of the drink photo in the images table.
   imageKey: text("image_key"),
   // Option slug -> quantity, applied when the builder opens.
   defaults: jsonb("defaults").$type<Record<string, number>>().notNull().default({}),
@@ -120,7 +120,7 @@ export const branches = pgTable(
     name: text("name").notNull(),
     address: text("address").notNull(),
     hours: text("hours").notNull(),
-    // R2 object key of the branch photo.
+    // Key of the branch photo in the images table.
     imageKey: text("image_key"),
     // Where payslips are copied for documentation, e.g. the owner's accountant.
     recordsEmail: text("records_email"),
@@ -294,3 +294,13 @@ export const feeSettlements = pgTable(
   },
   (t) => [uniqueIndex("fee_branch_month_idx").on(t.branchId, t.month)],
 );
+
+// Profile pictures and branch photos, stored in the database itself. Images are
+// resized WebP files of roughly 10-100 KB, kept as base64 text.
+export const images = pgTable("images", {
+  key: text("key").primaryKey(),
+  contentType: text("content_type").notNull(),
+  data: text("data").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});

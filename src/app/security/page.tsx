@@ -30,7 +30,7 @@ export default function SecurityPage() {
           <li>Prices are always recalculated on our servers, so totals can&apos;t be tampered with in the browser.</li>
           <li>Sign-ins and every change (orders, approvals, licenses, payroll entries) are recorded in an activity log reviewed by the administrator.</li>
           <li>Secrets such as email credentials are stored encrypted with our hosting provider, never in our code.</li>
-          <li>Uploaded photos are checked to be real images, resized and re-encoded, which removes hidden data such as GPS location. They are stored in a private bucket.</li>
+          <li>Uploaded photos are checked to be real images, resized and re-encoded, which removes hidden data such as GPS location. They are stored in our encrypted database.</li>
           <li>Employee account numbers are shown masked (last 4 digits only) on screens and payslips.</li>
           <li>Data we share or sell is anonymous statistics only, never names or individual order histories.</li>
         </ul>
