@@ -3,7 +3,6 @@ import { Fraunces, Geist } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CartProvider } from "@/components/cart";
-import { HeaderHeight } from "@/components/header-height";
 import { SiteFooter } from "@/components/site-footer";
 import { UserMenu } from "@/components/user-menu";
 import "./globals.css";
@@ -28,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
         <CartProvider>
-          <header id="site-header" className="border-b border-line print:hidden">
+          <header className="border-b border-line print:hidden">
             <nav className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-4">
               <Link href="/" className="font-display text-2xl font-semibold tracking-tight">
                 Brew Lab
@@ -43,7 +42,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <main className="flex-1">{children}</main>
         </CartProvider>
         <SiteFooter />
-        <HeaderHeight />
       </body>
     </html>
   );

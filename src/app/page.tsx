@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { getSession } from "@/lib/session";
-import { CupArt } from "@/components/cup-art";
+import { CupPreview } from "@/components/cup-preview";
 
 export default function Home() {
   return (
@@ -20,25 +20,7 @@ export default function Home() {
         </Suspense>
       </div>
       <div className="flex justify-center">
-        <CupArt
-          className="h-80 w-auto md:h-96"
-          visual={{
-            size: "large",
-            demitasse: false,
-            iced: false,
-            ice: null,
-            shots: 2,
-            roast: "signature",
-            brewed: false,
-            milk: "whole-milk",
-            syrups: ["caramel-syrup"],
-            sweetened: false,
-            whip: true,
-            foam: false,
-            drizzle: true,
-            cinnamon: false,
-          }}
-        />
+        <CupPreview size="large" iced={false} shots={2} milk syrup topping="whip" />
       </div>
     </div>
   );
