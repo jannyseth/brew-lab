@@ -50,6 +50,12 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  /* Keep content clear of the notch and home bar when installed on a phone. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-top: env(safe-area-inset-top);
+  -webkit-text-size-adjust: 100%;
+  overflow-x: clip;
 }
 /* Drink builder cup animations */
 @keyframes cup-pour {

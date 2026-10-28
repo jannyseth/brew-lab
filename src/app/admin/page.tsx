@@ -43,7 +43,7 @@ export default async function AdminDashboard() {
         <TrendChart data={daily.map((d) => ({ label: d.label, value: d.sales }))} format="money" label="Paid sales per day, last 30 days" />
       </section>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
         <section className={cardClass}>
           <h2 className="mb-4 font-semibold">Sales by branch this month</h2>
           <BarList

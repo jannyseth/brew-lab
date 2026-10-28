@@ -25,6 +25,8 @@ export default function PrivacyPage() {
           <li><strong>Account data:</strong> your name, email address, account type (customer or branch owner) and password. Passwords are stored only as a one-way hash; we can never see them.</li>
           <li><strong>Order data:</strong> the drinks you order and customize, your pickup name, notes to the barista, the branch, order status, amounts and payment status.</li>
           <li><strong>Saved drinks:</strong> recipes you choose to save.</li>
+          <li><strong>Rewards data:</strong> your bean coin balance and history, signature drinks you publish, the creator name you choose, and whether you agreed to appear on the public leaderboard.</li>
+          <li><strong>Help chat:</strong> the questions you type into the assistant and its answers. If you are signed in, it can read your recent orders and coin balance to answer you.</li>
           <li><strong>Profile pictures:</strong> a photo you upload for your account, or a branch photo uploaded by its owner. Photos are resized and stripped of hidden data such as location before they are stored.</li>
           <li><strong>Branch owner data:</strong> legal name, mobile number, business details, branch names, addresses and hours, sales records, and employee names, positions, pay rates, payroll records, emails and receiving accounts (bank or e-wallet) that owners enter.</li>
           <li><strong>Security data:</strong> the date and time you sign in, your IP address and browser type, and a record of changes made in your account (our activity log).</li>
@@ -59,6 +61,8 @@ export default function PrivacyPage() {
         <h2>4. Who we share it with</h2>
         <ul>
           <li><strong>The branch you order from</strong> sees your pickup name, order details and notes so it can prepare your drinks.</li>
+          <li><strong>The public</strong> sees your published signature drinks with your creator name, and, only if you opt in, your place on the leaderboard. Your real name and email are never shown. You can turn the leaderboard off any time in Rewards.</li>
+          <li><strong>AI help chat:</strong> your chat messages are processed by Vercel AI Gateway and Anthropic (Claude) to write answers. They are not used to advertise to you.</li>
           <li><strong>Service providers</strong> that process data for us under contract: Vercel (website hosting), Neon (database and photo storage) and Google (sending email codes and documents). Their servers may be located outside the Philippines; we require them to protect your data to a standard comparable to Philippine law.</li>
           <li><strong>Authorities</strong>, only when required by law or a lawful order.</li>
         </ul>

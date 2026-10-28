@@ -36,7 +36,7 @@ export default async function AdminBranchesPage() {
       {list.length === 0 ? (
         <p className="text-muted">No branches yet.</p>
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
           {list.map(({ branch: b, ownerEmail, ownerName, license, sales }) => (
             <li key={b.id} className={cardClass}>
               <div className="flex items-start justify-between gap-3">

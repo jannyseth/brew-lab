@@ -72,7 +72,7 @@ export default async function BranchOverview() {
 
       <section className="mt-6">
         <h2 className="mb-3 font-semibold">License renewal quota</h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {quotas.map(({ branch, license, sales }) => (
             <Link key={branch.id} href={`/branch/${branch.id}`} className={`${cardClass} block hover:border-accent`}>
               <div className="mb-4 flex items-start justify-between gap-2">

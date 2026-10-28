@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { branches, orderItems, orders } from "@/db/schema";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Badge, buttonPrimary, cardClass, formatDateTime } from "@/components/ui";
+import { HOLD_DAYS, PURCHASE_COINS } from "@/lib/coin-rules";
 import { formatCents } from "@/lib/drink";
 import { requireRole } from "@/lib/session";
 import { CancelOrderButton } from "./cancel-order-button";
@@ -74,6 +75,12 @@ export default async function OrderPage({ params }: PageProps<"/orders/[id]">) {
           </li>
         ))}
       </ul>
+      {order.order.discountCents > 0 && (
+        <p className="mt-4 flex justify-between text-sm">
+          <span>Free drink · {order.order.coinsUsed} bean coins{status === "cancelled" && " (returned)"}</span>
+          <span className="tabular-nums">−{formatCents(order.order.discountCents)}</span>
+        </p>
+      )}
       <div className="mt-4 flex items-center justify-between">
         <span className="text-muted">{order.order.paidAt ? "Paid" : "Pay at pickup"}</span>
         <span className="font-display text-2xl font-semibold tabular-nums">{formatCents(order.order.totalCents)}</span>
@@ -86,6 +93,14 @@ export default async function OrderPage({ params }: PageProps<"/orders/[id]">) {
           View or print
         </Link>
       </div>
+      {status === "completed" && (
+        <p className="mt-6 text-sm text-muted">
+          You earned {PURCHASE_COINS} bean coins on this order. They can be spent {HOLD_DAYS} days after pickup.{" "}
+          <Link href="/rewards" className="text-accent hover:underline">
+            See your coins
+          </Link>
+        </p>
+      )}
       {status === "placed" && <CancelOrderButton orderId={order.order.id} />}
     </div>
   );

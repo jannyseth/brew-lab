@@ -1,19 +1,21 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { reissueLicense, reviewBranch, reviewOwner, revokeLicense, suspendBranch } from "@/app/actions/admin";
+import { reissueLicense, reviewBranch, reviewOwner, reviewSignatureDrink, revokeLicense, suspendBranch } from "@/app/actions/admin";
 import type { FormState } from "@/components/action-form";
 import { buttonPrimary, buttonSecondary, inputClass } from "@/components/ui";
 
-export function ReviewButtons({ kind, id }: { kind: "owner" | "branch"; id: number }) {
+const reviewers = { owner: reviewOwner, branch: reviewBranch, drink: reviewSignatureDrink };
+const approveLabels = { owner: "Verify owner", branch: "Approve & license", drink: "Make public" };
+
+export function ReviewButtons({ kind, id }: { kind: "owner" | "branch" | "drink"; id: number }) {
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
   const decide = (decision: "approved" | "rejected") =>
     startTransition(async () => {
-      const review = kind === "owner" ? reviewOwner : reviewBranch;
-      const result = await review(id, decision, note);
+      const result = await reviewers[kind](id, decision, note);
       if (result && !result.ok) setError(result.message);
     });
 
@@ -23,13 +25,13 @@ export function ReviewButtons({ kind, id }: { kind: "owner" | "branch"; id: numb
         value={note}
         onChange={(e) => setNote(e.target.value)}
         maxLength={300}
-        placeholder="Note (shown to the owner if rejected)"
+        placeholder={kind === "drink" ? "Note (shown to the creator if rejected)" : "Note (shown to the owner if rejected)"}
         aria-label="Review note"
         className={`${inputClass} text-sm`}
       />
       <div className="mt-3 flex gap-2">
         <button type="button" disabled={pending} className={buttonPrimary} onClick={() => decide("approved")}>
-          {kind === "branch" ? "Approve & license" : "Verify owner"}
+          {approveLabels[kind]}
         </button>
         <button type="button" disabled={pending} className={buttonSecondary} onClick={() => decide("rejected")}>
           Reject

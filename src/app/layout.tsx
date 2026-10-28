@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CartProvider } from "@/components/cart";
 import { HeaderHeight } from "@/components/header-height";
 import { SiteFooter } from "@/components/site-footer";
+import { SupportChat } from "@/components/support-chat";
 import { UserMenu } from "@/components/user-menu";
 import "./globals.css";
 
@@ -21,6 +22,18 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: { default: "Brew Lab", template: "%s · Brew Lab" },
   description: "Pick a favorite from the menu or build your own coffee, exactly how you like it.",
+  // Opens full screen as its own app when added to the iPhone home screen.
+  appleWebApp: { capable: true, title: "Brew Lab", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf6f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#17110d" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -41,6 +54,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </nav>
           </header>
           <main className="flex-1">{children}</main>
+          <Suspense fallback={null}>
+            <SupportChat />
+          </Suspense>
         </CartProvider>
         <SiteFooter />
         <HeaderHeight />

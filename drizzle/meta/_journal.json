@@ -36,6 +36,13 @@
       "when": 1793060080235,
       "tag": "0004_tiny_mercury",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793196117762,
+      "tag": "0005_v2_rewards",
+      "breakpoints": true
     }
   ]
 }

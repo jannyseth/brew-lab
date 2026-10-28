@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 import { db } from "@/db";
-import { branches, branchLicenses, feeSettlements, managerApplications, menuItems, user } from "@/db/schema";
+import { branches, branchLicenses, feeSettlements, managerApplications, menuItems, signatureDrinks, user } from "@/db/schema";
 import type { FormState } from "@/components/action-form";
 import { branchMonthlySales, feeFor } from "@/lib/analytics";
 import { logActivity } from "@/lib/audit";
@@ -74,6 +74,29 @@ export async function reviewBranch(branchId: number, decision: Decision, note: s
   });
   revalidatePath("/admin", "layout");
   return { ok: true, message: decision === "approved" ? `Branch approved. License ${licenseNumber} issued.` : "Branch rejected." };
+}
+
+/** Approves a customer's signature drink so it goes public, or rejects it. */
+export async function reviewSignatureDrink(drinkId: number, decision: Decision, note: string): Promise<FormState> {
+  const admin = await getAdmin();
+  if (!admin) return onlyAdmin;
+  const [drink] = await db
+    .update(signatureDrinks)
+    .set({ status: decision, reviewNote: clean(note), reviewedAt: new Date() })
+    .where(and(eq(signatureDrinks.id, drinkId), eq(signatureDrinks.status, "pending")))
+    .returning({ id: signatureDrinks.id, name: signatureDrinks.name, slug: signatureDrinks.slug });
+  if (!drink) return { ok: false, message: "This drink was already reviewed." };
+  await logActivity({
+    ...admin,
+    action: `signature.${decision}`,
+    targetType: "signature_drink",
+    targetId: drinkId,
+    details: { name: drink.name, note: clean(note) },
+  });
+  revalidatePath("/admin", "layout");
+  revalidatePath(`/d/${drink.slug}`);
+  revalidatePath("/leaderboard");
+  return { ok: true, message: decision === "approved" ? "Drink is now public." : "Drink rejected." };
 }
 
 /** Takes an approved branch offline again, e.g. if it closes. Its license is kept. */

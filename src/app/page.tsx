@@ -4,7 +4,7 @@ import { getSession } from "@/lib/session";
 
 export default function Home() {
   return (
-    <div className="mx-auto grid max-w-5xl items-center gap-10 px-4 py-16 md:grid-cols-2 md:py-24">
+    <div className="mx-auto grid grid-cols-[minmax(0,1fr)] max-w-5xl items-center gap-10 px-4 py-16 md:grid-cols-2 md:py-24">
       <div>
         <p className="text-sm font-semibold uppercase tracking-widest text-accent">Your coffee, your way</p>
         <h1 className="mt-3 font-display text-5xl font-semibold leading-tight tracking-tight md:text-6xl">

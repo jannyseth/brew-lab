@@ -92,13 +92,14 @@ export default async function SalesPage({ params }: PageProps<"/branch/[branchId
         ))}
       </div>
 
-      <div className="mt-10 grid gap-8 md:grid-cols-2">
+      <div className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-2">
         <section>
           <h2 className="mb-3 text-lg font-semibold">Daily sales · last 30 days</h2>
           {daily.length === 0 ? (
             <p className="text-muted">No paid orders yet.</p>
           ) : (
-            <table className="w-full overflow-hidden rounded-2xl border border-line bg-card text-sm">
+            <div className="overflow-x-auto rounded-2xl border border-line bg-card">
+            <table className="w-full text-sm">
               <thead className="text-left text-muted">
                 <tr className="border-b border-line">
                   <th className="px-4 py-2 font-medium">Day</th>
@@ -116,6 +117,7 @@ export default async function SalesPage({ params }: PageProps<"/branch/[branchId
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </section>
         <section>

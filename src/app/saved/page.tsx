@@ -36,7 +36,10 @@ export default async function SavedPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
-      <PageTitle title="Saved drinks" subtitle="Your custom recipes, ready to reorder." />
+      <PageTitle
+        title="Saved drinks"
+        subtitle="Your custom recipes, ready to reorder. Publish one as a signature drink and earn bean coins when others order it."
+      />
       {drinks.length === 0 ? (
         <div className={cardClass}>
           Nothing saved yet. Build a drink and tap <span className="font-medium">Save drink</span>.{" "}

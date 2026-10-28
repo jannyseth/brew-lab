@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { contactEmail, LegalPage } from "@/components/legal";
+import { CREATOR_COINS, FREE_DRINK_COINS, HOLD_DAYS, PURCHASE_COINS } from "@/lib/coin-rules";
 
 export const metadata: Metadata = { title: "Terms of Use" };
 
@@ -36,6 +37,34 @@ export default function TermsPage() {
           <li>You pay at the counter when you pick up your order. An order is complete once it is paid and collected.</li>
           <li>You may cancel an order until the branch starts preparing it.</li>
           <li>Receipts shown in the app are order receipts. The branch is responsible for issuing official receipts or invoices required by the Bureau of Internal Revenue.</li>
+        </ol>
+      </section>
+
+      <section id="bean-coins">
+        <h2>Article 3-A. Bean coins and signature drinks</h2>
+        <ol>
+          <li>
+            Bean coins are reward points. You earn {PURCHASE_COINS} coins for each order that is paid and picked up, and{" "}
+            {FREE_DRINK_COINS} coins can be used for one free drink. Earned coins can be spent {HOLD_DAYS} days after the
+            order is picked up.
+          </li>
+          <li>Bean coins cannot be bought, have no cash value, and cannot be exchanged for cash, transferred, sold or combined between accounts.</li>
+          <li>
+            You may publish your own recipes as signature drinks. Brew Lab reviews each one before it is public and may
+            decline or remove any drink. You earn {CREATOR_COINS} coins (more at Platinum status) when another customer&apos;s
+            completed order includes your drink, within daily and monthly limits shown in the app. Your own orders do not earn
+            creator coins.
+          </li>
+          <li>Sharing your drink is optional and never earns coins. Brew Lab never posts on social media for you.</li>
+          <li>
+            Creator status (Gold and Platinum) is based on the number of different customers who ordered your signature drinks
+            in the calendar quarter, and is reviewed every quarter.
+          </li>
+          <li>
+            Coins from cancelled orders are removed, and coins spent on a cancelled order are returned. Brew Lab may remove
+            coins or status gained through misuse, such as fake or multiple accounts or orders placed only to earn coins.
+          </li>
+          <li>Brew Lab may change how many coins are earned or end the program with reasonable notice in the app. Coins already earned can be used for at least 30 days after such notice.</li>
         </ol>
       </section>
 

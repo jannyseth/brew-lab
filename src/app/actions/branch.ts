@@ -9,6 +9,7 @@ import { branches, employees, managerApplications, orders, payrollEntries } from
 import type { FormState } from "@/components/action-form";
 import { logActivity } from "@/lib/audit";
 import { authorizeBranch } from "@/lib/branch-access";
+import { awardCoinsForOrder, voidCoinsForOrder } from "@/lib/coins";
 import { emailPayslip } from "@/lib/payslips";
 import { getSession } from "@/lib/session";
 
@@ -105,11 +106,13 @@ export async function advanceOrder(orderId: number): Promise<FormState> {
   // The status condition stops two staff members from advancing the same order twice.
   const updated = await db
     .update(orders)
-    .set({ status: next })
+    .set({ status: next, ...(next === "completed" && { completedAt: new Date() }) })
     .where(and(eq(orders.id, orderId), eq(orders.status, order.status)))
     .returning({ id: orders.id });
   revalidatePath(`/branch/${order.branchId}`, "layout");
   if (updated.length === 0) return fail("Someone else just updated this order. Refresh to see it.");
+  // Bean coins for the buyer and any signature drink creators, after the response is sent.
+  if (next === "completed") after(() => awardCoinsForOrder(orderId));
   await logActivity({ ...viewer, action: "order.status", targetType: "order", targetId: orderId, details: { from: order.status, to: next } });
   return { ok: true, message: `Order #${orderId} is now ${next}.` };
 }
@@ -120,6 +123,7 @@ export async function cancelOrder(orderId: number): Promise<FormState> {
   const { order, viewer } = access;
   if (order.status === "completed" || order.status === "cancelled") return fail("This order is already finished.");
   await db.update(orders).set({ status: "cancelled", paidAt: null }).where(eq(orders.id, orderId));
+  await voidCoinsForOrder(orderId);
   await logActivity({ ...viewer, action: "order.cancelled", targetType: "order", targetId: orderId, details: { by: "branch" } });
   revalidatePath(`/branch/${order.branchId}`, "layout");
   return { ok: true, message: `Order #${orderId} was cancelled.` };

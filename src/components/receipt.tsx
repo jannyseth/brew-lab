@@ -80,6 +80,12 @@ export function Receipt({
           ))}
         </ul>
         {order.note && <p className="mt-3 text-xs">Note: {order.note}</p>}
+        {order.discountCents > 0 && (
+          <div className="mt-3 flex justify-between">
+            <span>Free drink ({order.coinsUsed} bean coins)</span>
+            <span className="tabular-nums">−{formatCents(order.discountCents)}</span>
+          </div>
+        )}
 
         <div className="mt-4 flex justify-between border-t border-dashed border-line pt-3 text-base font-semibold">
           <span>Total</span>

@@ -167,6 +167,10 @@ export const orders = pgTable(
     totalCents: integer("total_cents").notNull(),
     pickupName: text("pickup_name").notNull(),
     note: text("note").notNull().default(""),
+    // A free drink paid for with bean coins; totalCents is already reduced by discountCents.
+    coinsUsed: integer("coins_used").notNull().default(0),
+    discountCents: integer("discount_cents").notNull().default(0),
+    completedAt: timestamp("completed_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at")
       .notNull()
@@ -188,7 +192,71 @@ export const orderItems = pgTable("order_items", {
   selection: jsonb("selection").$type<Record<string, number>>().notNull(),
   unitPriceCents: integer("unit_price_cents").notNull(),
   quantity: integer("quantity").notNull(),
+  // Set when the line is someone's published signature drink, so its creator earns coins.
+  signatureDrinkId: integer("signature_drink_id").references(() => signatureDrinks.id, { onDelete: "set null" }),
+}, (t) => [index("order_items_signature_idx").on(t.signatureDrinkId)]);
+
+// Customers publish a saved recipe as a "signature drink". It goes public only
+// after the admin approves it, and the recipe is locked: edits mean a new drink.
+export const signatureDrinks = pgTable(
+  "signature_drinks",
+  {
+    id: serial("id").primaryKey(),
+    // Public share link: /d/{slug}
+    slug: text("slug").notNull().unique(),
+    creatorId: text("creator_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    menuItemId: integer("menu_item_id")
+      .notNull()
+      .references(() => menuItems.id),
+    name: text("name").notNull(),
+    story: text("story").notNull().default(""),
+    selection: jsonb("selection").$type<Record<string, number>>().notNull(),
+    status: reviewStatus("status").notNull().default("pending"),
+    reviewNote: text("review_note"),
+    reviewedAt: timestamp("reviewed_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("signature_creator_idx").on(t.creatorId), index("signature_status_idx").on(t.status)],
+);
+
+// Public creator name for signature drinks and the leaderboard. Real names are never shown.
+export const creatorProfiles = pgTable("creator_profiles", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  handle: text("handle").notNull().unique(),
+  // Leaderboard listing is opt-in (Data Privacy Act).
+  showOnLeaderboard: boolean("show_on_leaderboard").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// Bean coins: an append-only ledger. Entries are never edited, only voided or
+// reversed by a new entry. Earned coins can be spent once availableAt passes.
+export const coinKind = pgEnum("coin_kind", ["purchase", "creator", "redeem", "refund", "adjust"]);
+
+export const coinEntries = pgTable(
+  "coin_entries",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: coinKind("kind").notNull(),
+    // Positive when earned, negative when spent.
+    amount: integer("amount").notNull(),
+    orderId: integer("order_id").references(() => orders.id, { onDelete: "set null" }),
+    signatureDrinkId: integer("signature_drink_id").references(() => signatureDrinks.id, { onDelete: "set null" }),
+    // e.g. "purchase:42" or "creator:42:7"; stops the same order paying out twice.
+    idempotencyKey: text("idempotency_key").notNull().unique(),
+    availableAt: timestamp("available_at").notNull().defaultNow(),
+    voidedAt: timestamp("voided_at"),
+    note: text("note").notNull().default(""),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("coin_user_idx").on(t.userId, t.createdAt), index("coin_order_idx").on(t.orderId)],
+);
 
 // Payroll is a record only; the app never moves money.
 export const employees = pgTable("employees", {

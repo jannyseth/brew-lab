@@ -63,6 +63,11 @@ export default async function BranchOrdersPage({ params }: PageProps<"/branch/[b
           ))}
       </ul>
       {o.note && <p className="mt-2 rounded-lg bg-accent-soft px-3 py-2 text-sm">Note: {o.note}</p>}
+      {o.discountCents > 0 && (
+        <p className="mt-2 text-sm">
+          Free drink with {o.coinsUsed} bean coins: −{formatCents(o.discountCents)} (already taken off the total)
+        </p>
+      )}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <span className="flex items-baseline gap-3">
           <span className="font-display text-xl font-semibold tabular-nums">{formatCents(o.totalCents)}</span>
@@ -83,12 +88,12 @@ export default async function BranchOrdersPage({ params }: PageProps<"/branch/[b
       {open.length === 0 ? (
         <p className="text-muted">No open orders right now. New orders appear here automatically.</p>
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2">{open.map(renderOrder)}</ul>
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">{open.map(renderOrder)}</ul>
       )}
       {done.length > 0 && (
         <>
           <h2 className="mb-4 mt-10 text-lg font-semibold">Finished in the last 12 hours</h2>
-          <ul className="grid gap-4 opacity-80 md:grid-cols-2">{done.map(renderOrder)}</ul>
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 opacity-80 md:grid-cols-2">{done.map(renderOrder)}</ul>
         </>
       )}
     </div>

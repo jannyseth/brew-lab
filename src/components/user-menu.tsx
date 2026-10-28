@@ -48,6 +48,9 @@ export async function UserMenu() {
           <Link href="/saved" className="hover:text-accent">
             Saved
           </Link>
+          <Link href="/rewards" className="hover:text-accent">
+            Rewards
+          </Link>
         </>
       )}
       {(role === "branch_manager" || role === "branch_applicant") && (

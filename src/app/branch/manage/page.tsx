@@ -27,7 +27,7 @@ export default async function ManageBranchesPage() {
         subtitle="Each new branch is reviewed by the admin. Approved branches get a 1-year license that renews when the branch reaches ₱100,000 in sales that year."
       />
       {list.length > 0 && (
-        <ul className="grid gap-4 lg:grid-cols-2">
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
           {list.map((b) => (
             <li key={b.id} className={cardClass}>
               <div className="flex items-start justify-between gap-3">

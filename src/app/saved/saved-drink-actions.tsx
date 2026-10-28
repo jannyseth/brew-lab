@@ -37,6 +37,11 @@ export function SavedDrinkActions({ id, slug, drinkName, summary, selection, pri
       <Link href={`/menu/${slug}#s=${encodeURIComponent(JSON.stringify(selection))}`} className="hover:text-accent">
         Customize
       </Link>
+      {priceCents !== null && (
+        <Link href={`/saved/${id}/publish`} className="text-accent hover:underline">
+          Publish as signature drink
+        </Link>
+      )}
       <button
         type="button"
         disabled={pending}

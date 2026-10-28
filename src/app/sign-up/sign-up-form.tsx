@@ -92,7 +92,7 @@ export function SignUpForm() {
     <form onSubmit={signUp} className="mt-8">
       <fieldset>
         <legend className="text-sm font-medium">Account type</legend>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <div className="mt-2 grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-2">
           {accountTypes.map((t) => (
             <label
               key={t.value}

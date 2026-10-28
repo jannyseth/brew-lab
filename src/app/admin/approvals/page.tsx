@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { branches, managerApplications, user } from "@/db/schema";
+import { branches, creatorProfiles, managerApplications, menuItems, signatureDrinks, user } from "@/db/schema";
 import { cardClass, formatDateTime } from "@/components/ui";
+import { describeSelection } from "@/lib/drink";
+import { getDrink } from "@/lib/menu";
 import { requireRole } from "@/lib/session";
 import { AreaTitle } from "@/components/area-shell";
 import { ReviewButtons } from "../review-buttons";
@@ -26,16 +28,31 @@ export default async function ApprovalsPage() {
     .where(eq(branches.status, "pending"))
     .orderBy(asc(branches.createdAt));
 
+  const pendingDrinks = await db
+    .select({ drink: signatureDrinks, handle: creatorProfiles.handle, email: user.email })
+    .from(signatureDrinks)
+    .innerJoin(user, eq(signatureDrinks.creatorId, user.id))
+    .leftJoin(creatorProfiles, eq(creatorProfiles.userId, user.id))
+    .where(eq(signatureDrinks.status, "pending"))
+    .orderBy(asc(signatureDrinks.createdAt));
+  const drinkDetails = await Promise.all(
+    pendingDrinks.map(async ({ drink }) => {
+      const [item] = await db.select({ slug: menuItems.slug }).from(menuItems).where(eq(menuItems.id, drink.menuItemId));
+      const config = item ? await getDrink(item.slug) : null;
+      return config ? [config.name, ...describeSelection(config, drink.selection)].join(" · ") : "Base drink no longer on the menu";
+    }),
+  );
+
   return (
     <div>
-      <AreaTitle title="Approvals" subtitle="Verify branch owners, then approve each branch. Approving a branch issues its 1-year license." />
+      <AreaTitle title="Approvals" subtitle="Verify branch owners, approve each branch, and review customers' signature drinks. Approving a branch issues its 1-year license." />
 
       <section>
         <h2 className="mb-4 text-lg font-semibold">Branch owners to verify ({applications.length})</h2>
         {applications.length === 0 ? (
           <p className="text-muted">Nothing waiting.</p>
         ) : (
-          <ul className="grid gap-4 md:grid-cols-2">
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
             {applications.map(({ application: a, email }) => (
               <li key={a.id} className={cardClass}>
                 <p className="font-semibold">{a.fullName}</p>
@@ -56,7 +73,7 @@ export default async function ApprovalsPage() {
         {pendingBranches.length === 0 ? (
           <p className="text-muted">Nothing waiting.</p>
         ) : (
-          <ul className="grid gap-4 md:grid-cols-2">
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
             {pendingBranches.map(({ branch: b, ownerEmail, ownerName }) => (
               <li key={b.id} className={cardClass}>
                 <p className="font-semibold">{b.name}</p>
@@ -68,6 +85,28 @@ export default async function ApprovalsPage() {
                 </p>
                 {b.reviewNote && <p className="mt-2 text-sm">Note: {b.reviewNote}</p>}
                 <ReviewButtons kind="branch" id={b.id} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="mt-12">
+        <h2 className="mb-1 text-lg font-semibold">Signature drinks to review ({pendingDrinks.length})</h2>
+        <p className="mb-4 text-sm text-muted">Check the name is appropriate and the recipe is something baristas can make quickly.</p>
+        {pendingDrinks.length === 0 ? (
+          <p className="text-muted">Nothing waiting.</p>
+        ) : (
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
+            {pendingDrinks.map(({ drink: d, handle, email }, i) => (
+              <li key={d.id} className={cardClass}>
+                <p className="font-semibold">{d.name}</p>
+                <p className="text-sm text-muted">{drinkDetails[i]}</p>
+                <p className="text-xs text-muted">
+                  By @{handle ?? "?"} ({email}) · submitted {formatDateTime(d.createdAt)}
+                </p>
+                {d.story && <p className="mt-3 rounded-lg bg-accent-soft px-3 py-2 text-sm">“{d.story}”</p>}
+                <ReviewButtons kind="drink" id={d.id} />
               </li>
             ))}
           </ul>

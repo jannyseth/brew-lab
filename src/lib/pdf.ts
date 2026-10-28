@@ -119,7 +119,17 @@ export type ReceiptData = {
   receiptNumber: string;
   copy: "Customer copy" | "Branch copy";
   branch: { name: string; address: string };
-  order: { id: number; createdAt: Date; pickupName: string; note: string; totalCents: number; paidAt: Date | null; status: string };
+  order: {
+    id: number;
+    createdAt: Date;
+    pickupName: string;
+    note: string;
+    totalCents: number;
+    paidAt: Date | null;
+    status: string;
+    discountCents?: number;
+    coinsUsed?: number;
+  };
   items: { drinkName: string; summary: string; quantity: number; unitPriceCents: number }[];
 };
 
@@ -144,6 +154,7 @@ export async function receiptPdf(r: ReceiptData) {
     w.gap(3);
   }
   if (r.order.note) w.text(`Note: ${r.order.note}`, { size: 8 });
+  if (r.order.discountCents) w.row(`Free drink (${r.order.coinsUsed} bean coins)`, `-${pdfMoney(r.order.discountCents)}`);
   w.rule();
   w.row("TOTAL", pdfMoney(r.order.totalCents), { size: 11, bold: true });
   w.text(

@@ -6,16 +6,18 @@ import { useState, useTransition } from "react";
 import { placeOrder } from "@/app/actions/customer";
 import { useCart } from "@/components/cart";
 import { buttonPrimary, cardClass, inputClass } from "@/components/ui";
+import { FREE_DRINK_COINS } from "@/lib/coin-rules";
 import { formatCents } from "@/lib/drink";
 
 type Branch = { id: number; name: string; address: string; hours: string; imageUrl: string | null };
 
-export function CheckoutForm({ branches, defaultName }: { branches: Branch[]; defaultName: string }) {
+export function CheckoutForm({ branches, defaultName, coins }: { branches: Branch[]; defaultName: string; coins: number }) {
   const router = useRouter();
   const { lines, clear } = useCart();
   const [branchId, setBranchId] = useState(branches[0]?.id ?? 0);
   const [pickupName, setPickupName] = useState(defaultName);
   const [note, setNote] = useState("");
+  const [useCoins, setUseCoins] = useState(false);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -33,7 +35,10 @@ export function CheckoutForm({ branches, defaultName }: { branches: Branch[]; de
     );
   }
 
-  const total = lines.reduce((sum, l) => sum + l.unitPriceCents * l.quantity, 0);
+  const subtotal = lines.reduce((sum, l) => sum + l.unitPriceCents * l.quantity, 0);
+  const canUseCoins = coins >= FREE_DRINK_COINS;
+  const discount = useCoins && canUseCoins ? Math.max(...lines.map((l) => l.unitPriceCents)) : 0;
+  const total = subtotal - discount;
 
   return (
     <form
@@ -45,7 +50,8 @@ export function CheckoutForm({ branches, defaultName }: { branches: Branch[]; de
             branchId,
             pickupName,
             note,
-            items: lines.map((l) => ({ slug: l.slug, selection: l.selection, quantity: l.quantity })),
+            items: lines.map((l) => ({ slug: l.slug, selection: l.selection, quantity: l.quantity, signature: l.signature })),
+            useCoins: discount > 0,
           });
           if (result.ok) {
             clear();
@@ -100,10 +106,35 @@ export function CheckoutForm({ branches, defaultName }: { branches: Branch[]; de
         <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} rows={2} className={inputClass} />
       </label>
 
+      <label
+        className={`flex items-start gap-3 rounded-2xl border p-4 ${canUseCoins ? "cursor-pointer border-line bg-card" : "border-line opacity-70"}`}
+      >
+        <input
+          type="checkbox"
+          checked={useCoins && canUseCoins}
+          disabled={!canUseCoins}
+          onChange={(e) => setUseCoins(e.target.checked)}
+          className="mt-1 h-4 w-4 accent-[var(--accent)]"
+        />
+        <span className="text-sm">
+          <span className="font-medium">Use {FREE_DRINK_COINS} bean coins for a free drink</span>
+          <span className="block text-muted">
+            {canUseCoins
+              ? `You have ${coins} coins. The most expensive drink in this order becomes free.`
+              : `You have ${coins} spendable coins. Earn ${FREE_DRINK_COINS - coins} more to get a free drink.`}{" "}
+            <Link href="/rewards" className="text-accent hover:underline">
+              Rewards
+            </Link>
+          </span>
+        </span>
+      </label>
+
       <div className="flex items-center justify-between border-t border-line pt-6">
         <span className="text-lg">
           Total <span className="font-display text-2xl font-semibold tabular-nums">{formatCents(total)}</span>
-          <span className="block text-sm text-muted">Pay at pickup</span>
+          <span className="block text-sm text-muted">
+            {discount > 0 ? `Free drink −${formatCents(discount)} · ` : ""}Pay at pickup
+          </span>
         </span>
         <button disabled={pending} className={buttonPrimary}>
           {pending ? "Placing order…" : "Place order"}

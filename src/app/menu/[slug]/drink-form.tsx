@@ -160,7 +160,7 @@ export function DrinkForm({ drink }: { drink: DrinkConfig }) {
       </div>
 
       {/* Sticky order bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
           {added ? (
             <>

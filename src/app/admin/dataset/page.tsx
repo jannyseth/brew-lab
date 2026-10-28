@@ -55,7 +55,7 @@ export default async function DatasetPage() {
         )}
       </section>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
         <section className={cardClass}>
           <h2 className="mb-1 font-semibold">Most-sold menu items</h2>
           <p className="mb-4 text-xs text-muted">All time, by cups sold.</p>
@@ -78,7 +78,7 @@ export default async function DatasetPage() {
       <section className={`${cardClass} mt-6`}>
         <h2 className="mb-1 font-semibold">Ingredients by popularity</h2>
         <p className="mb-4 text-xs text-muted">Cups that included each option. Shots and syrup pumps count once per cup.</p>
-        <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-2 xl:grid-cols-3">
           {groups.map((group) => (
             <div key={group}>
               <h3 className="mb-3 text-sm font-semibold">{group}</h3>
@@ -91,7 +91,7 @@ export default async function DatasetPage() {
         </div>
       </section>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
         <section className={cardClass}>
           <h2 className="mb-1 font-semibold">Common combinations</h2>
           <p className="mb-4 text-xs text-muted">Add-ons most often chosen together in the same cup.</p>

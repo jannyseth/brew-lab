@@ -15,6 +15,8 @@ export type CartLine = {
   selection: Selection;
   unitPriceCents: number;
   quantity: number;
+  /** Slug of a published signature drink, so its creator earns bean coins. */
+  signature?: string;
 };
 
 type CartContext = {

@@ -56,7 +56,7 @@ export default async function BranchDashboard({ params }: PageProps<"/branch/[br
         </p>
       )}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <section className={cardClass}>
           <h2 className="mb-4 font-semibold">Renewal quota</h2>
           {license ? (
@@ -80,7 +80,7 @@ export default async function BranchDashboard({ params }: PageProps<"/branch/[br
         </section>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
         <section className={cardClass}>
           <h2 className="mb-4 font-semibold">Top drinks this month</h2>
           <BarList items={drinks.map((d) => ({ label: d.name, value: d.sales, note: `${d.cups} cups` }))} format="money" />

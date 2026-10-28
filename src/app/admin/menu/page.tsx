@@ -21,7 +21,7 @@ export default async function MenuPhotosPage() {
         title="Menu photos"
         subtitle="The photo customers see for each drink, in every branch. Uploads are cropped square and given the same warm look as the rest of the menu."
       />
-      <ul className="grid gap-4 md:grid-cols-2">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2">
         {items.map((item) => (
           <li key={item.id} className={cardClass}>
             <p className="mb-3 font-semibold">{item.name}</p>

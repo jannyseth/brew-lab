@@ -144,7 +144,7 @@ export function MenuGrid({ sections }: { sections: Section[] }) {
       </div>
 
       {(count > 0 || toast) && (
-        <div className="fixed inset-x-0 bottom-4 z-30 flex justify-center px-4">
+        <div className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4">
           <Link
             href="/cart"
             className="flex w-full max-w-md items-center justify-between gap-4 rounded-full bg-foreground px-5 py-3.5 text-background shadow-xl transition active:scale-[.98]"

@@ -57,7 +57,7 @@ export default async function LicensePage({ params }: PageProps<"/licenses/[id]"
           and to accept orders through the Brew Lab platform for the period below.
         </p>
 
-        <dl className="mt-10 grid gap-6 text-center sm:grid-cols-3">
+        <dl className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-6 text-center sm:grid-cols-3">
           <div>
             <dt className="text-xs uppercase tracking-wider text-muted">Valid from</dt>
             <dd className="mt-1 font-semibold">{formatDate(license.issuedAt)}</dd>
@@ -94,7 +94,7 @@ export default async function LicensePage({ params }: PageProps<"/licenses/[id]"
           </ol>
         </section>
 
-        <footer className="mt-12 grid gap-10 text-center text-sm sm:grid-cols-2">
+        <footer className="mt-12 grid grid-cols-[minmax(0,1fr)] gap-10 text-center text-sm sm:grid-cols-2">
           <div>
             <div className="mx-auto h-px w-48 bg-foreground/40" />
             <p className="mt-2">Brew Lab Administrator</p>

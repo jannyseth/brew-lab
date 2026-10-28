@@ -21,7 +21,7 @@ type EmployeeDefaults = Partial<typeof employees.$inferSelect>;
 function EmployeeFields({ e }: { e?: EmployeeDefaults }) {
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
         <label className="block text-sm font-medium">
           Name
           <input name="name" required minLength={2} maxLength={80} defaultValue={e?.name} className={inputClass} />
@@ -50,7 +50,7 @@ function EmployeeFields({ e }: { e?: EmployeeDefaults }) {
       <fieldset className="mt-4">
         <legend className="text-sm font-semibold">Receiving account</legend>
         <p className="text-xs text-muted">Where you send this employee&apos;s pay. Printed on payslips with only the last 4 digits shown.</p>
-        <div className="mt-2 grid gap-3 sm:grid-cols-3">
+        <div className="mt-2 grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-3">
           <label className="block text-sm font-medium">
             Method
             <select name="payoutMethod" defaultValue={e?.payoutMethod ?? ""} className={inputClass}>
@@ -124,7 +124,7 @@ export default async function PayrollPage({ params }: PageProps<"/branch/[branch
         payslip PDF that is emailed to the employee and your records inbox.
       </p>
 
-      <div className="grid gap-8 xl:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 xl:grid-cols-2">
         <section>
           <h2 className="mb-3 text-lg font-semibold">Log a pay period</h2>
           {active.length === 0 ? (

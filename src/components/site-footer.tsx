@@ -28,10 +28,22 @@ const legal = [
 export function SiteFooter() {
   return (
     <footer className="border-t border-line print:hidden">
-      <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 sm:grid-cols-3">
+      <div className="mx-auto grid grid-cols-[minmax(0,1fr)] max-w-5xl gap-8 px-4 py-10 sm:grid-cols-3">
         <div>
           <p className="font-display text-xl font-semibold">Brew Lab</p>
           <p className="mt-2 text-sm text-muted">Made fresh, made yours. Order ahead and pay at pickup.</p>
+          <ul className="mt-3 space-y-1 text-sm">
+            <li>
+              <Link href="/faq" className="text-muted hover:text-accent">
+                FAQ &amp; help
+              </Link>
+            </li>
+            <li>
+              <Link href="/leaderboard" className="text-muted hover:text-accent">
+                Top signature drinks
+              </Link>
+            </li>
+          </ul>
         </div>
         <nav aria-label="Legal" className="text-sm">
           <p className="font-semibold">Your data</p>
