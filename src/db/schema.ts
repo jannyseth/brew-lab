@@ -372,3 +372,46 @@ export const images = pgTable("images", {
   sizeBytes: integer("size_bytes").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// Support tickets: customers and branch owners message Brew Lab, and any admin
+// or support agent answers from their own account. Every step is also written
+// to the activity log, so each reply can be traced to a person.
+export const supportStatus = pgEnum("support_status", ["open", "waiting_customer", "resolved"]);
+
+export const supportTickets = pgTable(
+  "support_tickets",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    subject: text("subject").notNull(),
+    // The FAQ question the customer was reading when they wrote in, if any.
+    topic: text("topic"),
+    status: supportStatus("status").notNull().default("open"),
+    assignedTo: text("assigned_to").references(() => user.id, { onDelete: "set null" }),
+    lastMessageAt: timestamp("last_message_at").notNull().defaultNow(),
+    firstResponseAt: timestamp("first_response_at"),
+    resolvedAt: timestamp("resolved_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("support_status_idx").on(t.status, t.lastMessageAt), index("support_user_idx").on(t.userId)],
+);
+
+export const supportMessages = pgTable(
+  "support_messages",
+  {
+    id: serial("id").primaryKey(),
+    ticketId: integer("ticket_id")
+      .notNull()
+      .references(() => supportTickets.id, { onDelete: "cascade" }),
+    authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    // Customers see support replies signed "Brew Lab Support", not the agent's name.
+    fromSupport: boolean("from_support").notNull().default(false),
+    // Notes between support staff; never shown to the customer.
+    internal: boolean("internal").notNull().default(false),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("support_messages_ticket_idx").on(t.ticketId, t.createdAt)],
+);

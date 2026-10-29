@@ -32,12 +32,15 @@ const badgeColors: Record<string, string> = {
   unlicensed: "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200",
   active: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200",
   renewed: "bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200",
+  open: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200",
+  waiting_customer: "bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200",
+  resolved: "bg-stone-200 text-stone-800 dark:bg-stone-700 dark:text-stone-100",
 };
 
-export function Badge({ status }: { status: string }) {
+export function Badge({ status, label }: { status: string; label?: string }) {
   return (
     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${badgeColors[status] ?? badgeColors.completed}`}>
-      {status}
+      {label ?? status}
     </span>
   );
 }

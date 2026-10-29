@@ -11,7 +11,8 @@ import { logActivity } from "./audit";
 import { sendAuthCode } from "./mail";
 
 // branch_applicant: signed up as a branch owner, waiting for the super admin.
-export type Role = "customer" | "branch_applicant" | "branch_manager" | "super_admin";
+// support_agent: answers the support inbox and sees nothing else in the admin area.
+export type Role = "customer" | "branch_applicant" | "branch_manager" | "super_admin" | "support_agent";
 export type AccountType = "customer" | "branch";
 
 const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS ?? "")

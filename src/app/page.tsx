@@ -60,11 +60,11 @@ function CustomerActions() {
 async function HomeActions() {
   const session = await getSession();
   const role = session?.user.role;
-  if (role === "branch_manager" || role === "branch_applicant" || role === "super_admin") {
+  if (role === "branch_manager" || role === "branch_applicant" || role === "super_admin" || role === "support_agent") {
     return (
       <div className="mt-8">
         <Link
-          href={role === "super_admin" ? "/admin" : "/branch"}
+          href={role === "super_admin" ? "/admin" : role === "support_agent" ? "/admin/support" : "/branch"}
           className="rounded-full bg-accent px-6 py-3 font-medium text-accent-contrast hover:opacity-90"
         >
           Go to your dashboard

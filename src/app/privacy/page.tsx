@@ -26,6 +26,7 @@ export default function PrivacyPage() {
           <li><strong>Order data:</strong> the drinks you order and customize, your pickup name, notes to the barista, the branch, order status, amounts and payment status.</li>
           <li><strong>Saved drinks:</strong> recipes you choose to save.</li>
           <li><strong>Rewards data:</strong> your bean coin balance and history, signature drinks you publish, the creator name you choose, and whether you agreed to appear on the public leaderboard.</li>
+          <li><strong>Support messages:</strong> what you write to Brew Lab Support and our replies. They are read only by Brew Lab admins and support staff, each signed in with their own account.</li>
           <li><strong>Profile pictures:</strong> a photo you upload for your account, or a branch photo uploaded by its owner. Photos are resized and stripped of hidden data such as location before they are stored.</li>
           <li><strong>Branch owner data:</strong> legal name, mobile number, business details, branch names, addresses and hours, sales records, and employee names, positions, pay rates, payroll records, emails and receiving accounts (bank or e-wallet) that owners enter.</li>
           <li><strong>Security data:</strong> the date and time you sign in, your IP address and browser type, and a record of changes made in your account (our activity log).</li>

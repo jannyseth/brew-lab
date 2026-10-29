@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 import { db } from "@/db";
-import { branches, branchLicenses, feeSettlements, managerApplications, menuItems, signatureDrinks, user } from "@/db/schema";
+import { branches, branchLicenses, feeSettlements, managerApplications, menuItems, signatureDrinks, supportTickets, user } from "@/db/schema";
 import type { FormState } from "@/components/action-form";
 import { branchMonthlySales, feeFor } from "@/lib/analytics";
 import { logActivity } from "@/lib/audit";
@@ -190,4 +190,31 @@ export async function resetMenuPhoto(slug: string): Promise<FormState> {
   updateTag("menu");
   revalidatePath("/admin/menu");
   return { ok: true, message: "Back to the starter photo." };
+}
+
+/**
+ * Gives a customer account access to the support inbox, or takes it away.
+ * Only plain customer accounts can become agents, so branch owners and the
+ * admin keep their own roles.
+ */
+export async function setSupportAgent(userId: string, enabled: boolean): Promise<FormState> {
+  const admin = await getAdmin();
+  if (!admin) return onlyAdmin;
+  const [changed] = await db
+    .update(user)
+    .set({ role: enabled ? "support_agent" : "customer" })
+    .where(and(eq(user.id, userId), eq(user.role, enabled ? "customer" : "support_agent")))
+    .returning({ email: user.email });
+  if (!changed) return { ok: false, message: enabled ? "Only customer accounts can be made support agents." : "This account isn't a support agent." };
+  // Their tickets go back to the shared queue so none are forgotten.
+  if (!enabled) await db.update(supportTickets).set({ assignedTo: null }).where(eq(supportTickets.assignedTo, userId));
+  await logActivity({
+    ...admin,
+    action: enabled ? "support.agent_added" : "support.agent_removed",
+    targetType: "user",
+    targetId: userId,
+    details: { email: changed.email },
+  });
+  revalidatePath("/admin", "layout");
+  return { ok: true, message: enabled ? "Now a support agent." : "Support access removed." };
 }

@@ -43,6 +43,13 @@
       "when": 1793196117762,
       "tag": "0005_v2_rewards",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793236525517,
+      "tag": "0006_support_inbox",
+      "breakpoints": true
     }
   ]
 }

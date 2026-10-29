@@ -120,7 +120,7 @@ export const faq: FaqSection[] = [
     items: [
       {
         q: "How do I reach a person?",
-        a: "Message Brew Lab on Facebook, or ask the staff at your branch.",
+        a: "Tap Message us on this page. A person from the Brew Lab team answers in the app, and we email you when they reply. For an order in progress, the staff at your branch can help fastest.",
       },
     ],
   },

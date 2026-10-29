@@ -76,3 +76,25 @@ export async function sendDocument(opts: { to: string[]; subject: string; text: 
     return false;
   }
 }
+
+/** Tells a customer that Brew Lab Support answered. The reply itself stays in the app. */
+export async function sendSupportReplyNotice(email: string, subject: string, link: string) {
+  if (!process.env.GMAIL_APP_PASSWORD) {
+    if (process.env.NODE_ENV === "development") console.log(`[dev] Would tell ${email} about a support reply: ${link}`);
+    return;
+  }
+  try {
+    await transporter.sendMail({
+      from: `Brew Lab <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: `Brew Lab Support replied: ${subject}`,
+      text: `Brew Lab Support replied to your message "${subject}".
+
+Read and answer it here: ${link}
+
+For your privacy the reply is only shown after you sign in.`,
+    });
+  } catch (err) {
+    console.error("Failed to send support reply notice", err);
+  }
+}

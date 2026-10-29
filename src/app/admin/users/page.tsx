@@ -6,6 +6,7 @@ import { Avatar } from "@/components/avatar";
 import { formatDateTime } from "@/components/ui";
 import { requireRole } from "@/lib/session";
 import { AreaTitle } from "@/components/area-shell";
+import { SupportAgentButton } from "./support-agent-button";
 
 export const metadata: Metadata = { title: "Users" };
 
@@ -14,6 +15,7 @@ const roleLabels: Record<string, string> = {
   branch_applicant: "Owner (unverified)",
   branch_manager: "Branch owner",
   super_admin: "Admin",
+  support_agent: "Support agent",
 };
 
 export default async function AdminUsersPage() {
@@ -89,7 +91,14 @@ export default async function AdminUsersPage() {
                     </span>
                   </span>
                 </td>
-                <td className="px-4 py-2">{roleLabels[u.role] ?? u.role}</td>
+                <td className="px-4 py-2">
+                  {roleLabels[u.role] ?? u.role}
+                  {(u.role === "customer" || u.role === "support_agent") && u.verified && (
+                    <span className="block">
+                      <SupportAgentButton userId={u.id} isAgent={u.role === "support_agent"} />
+                    </span>
+                  )}
+                </td>
                 <td className="whitespace-nowrap px-4 py-2">{formatDateTime(u.createdAt)}</td>
                 <td className="whitespace-nowrap px-4 py-2">{u.lastSignIn ? formatDateTime(new Date(u.lastSignIn)) : "—"}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{u.orders ?? 0}</td>

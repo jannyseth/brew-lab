@@ -63,6 +63,11 @@ export async function UserMenu() {
           Admin
         </Link>
       )}
+      {role === "support_agent" && (
+        <Link href="/admin/support" className="hover:text-accent">
+          Support inbox
+        </Link>
+      )}
       <Link href="/profile" className="flex items-center gap-2 hover:text-accent" aria-label="Your profile">
         <Avatar src={session.user.image} name={session.user.name || session.user.email} size={28} />
       </Link>

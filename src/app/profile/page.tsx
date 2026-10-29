@@ -17,6 +17,7 @@ const accountLabels: Record<string, string> = {
   branch_applicant: "Branch owner (waiting for verification)",
   branch_manager: "Verified branch owner",
   super_admin: "Administrator",
+  support_agent: "Brew Lab support",
 };
 
 export default async function ProfilePage() {
