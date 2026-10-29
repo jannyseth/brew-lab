@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import { CartProvider } from "@/components/cart";
 import { HeaderHeight } from "@/components/header-height";
 import { SiteFooter } from "@/components/site-footer";
-import { SupportChat } from "@/components/support-chat";
 import { UserMenu } from "@/components/user-menu";
 import "./globals.css";
 
@@ -54,9 +53,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </nav>
           </header>
           <main className="flex-1">{children}</main>
-          <Suspense fallback={null}>
-            <SupportChat />
-          </Suspense>
         </CartProvider>
         <SiteFooter />
         <HeaderHeight />

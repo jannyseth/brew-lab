@@ -6,8 +6,6 @@ import {
   TIER_THRESHOLDS,
 } from "./coin-rules";
 
-// One source for the FAQ page and the AI assistant, so they never disagree.
-
 export const FACEBOOK_URL = "https://www.facebook.com/nadj.vega";
 
 export type FaqSection = { title: string; items: { q: string; a: string }[] };
@@ -122,13 +120,8 @@ export const faq: FaqSection[] = [
     items: [
       {
         q: "How do I reach a person?",
-        a: "Message Brew Lab on Facebook, or ask the staff at your branch. The chat assistant can answer most questions any time.",
+        a: "Message Brew Lab on Facebook, or ask the staff at your branch.",
       },
     ],
   },
 ];
-
-/** The FAQ as plain text for the assistant's instructions. */
-export function faqText() {
-  return faq.map((s) => `## ${s.title}\n${s.items.map((i) => `Q: ${i.q}\nA: ${i.a}`).join("\n")}`).join("\n\n");
-}

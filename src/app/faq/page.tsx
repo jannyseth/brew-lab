@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function FaqPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
-      <PageTitle title="Frequently asked questions" subtitle="Can't find your answer? Tap the chat button to ask our assistant." />
+      <PageTitle title="Frequently asked questions" subtitle="Answers about ordering, pickup, bean coins and your account." />
       <div className="space-y-10">
         {faq.map((section) => (
           <section key={section.title}>
