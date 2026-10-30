@@ -26,6 +26,13 @@ export async function requireUser(returnTo = "/") {
   return session.user as typeof session.user & { role: Role };
 }
 
+/** For the sign-in and sign-up pages: someone already signed in goes on to where they were headed. */
+export async function redirectIfSignedIn(next?: string | string[]) {
+  if (!(await getSession())) return;
+  const safe = typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "/account";
+  redirect(safe);
+}
+
 export async function requireRole(roles: Role[], returnTo = "/") {
   const user = await requireUser(returnTo);
   if (user.role === "needs_two_factor") redirect("/account/two-factor");

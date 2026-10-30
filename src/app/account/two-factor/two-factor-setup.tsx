@@ -65,7 +65,10 @@ export function TwoFactorSetup({ enabled, staff }: { enabled: boolean; staff: bo
     setBusy(true);
     setError("");
     const { error } = await authClient.twoFactor.verifyTotp({ code });
-    if (error) return fail("That code didn't work. Check your phone's time is set automatically, then try the code showing now.");
+    if (error?.code === "INVALID_CODE") {
+      return fail("That code didn't work. Check your phone's time is set automatically, then try the code showing now.");
+    }
+    if (error) return fail("Something went wrong. Start again with “Set up two-factor sign-in”.");
     go({ name: "codes", backupCodes });
   }
 

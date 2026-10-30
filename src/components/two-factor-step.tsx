@@ -22,11 +22,15 @@ export function TwoFactorStep({ onDone }: { onDone: () => void }) {
     if (!error) return onDone();
     setBusy(false);
     setError(
-      error.status === 429 || error.status === 423
+      error.status === 429 || error.code === "ACCOUNT_TEMPORARILY_LOCKED"
         ? "Too many wrong codes. Wait 15 minutes and try again."
-        : useBackup
-          ? "That backup code didn't work, or it was already used."
-          : "That code didn't work. Codes change every 30 seconds, so use the one showing now.",
+        : error.code === "INVALID_TWO_FACTOR_COOKIE"
+          ? "This sign-in expired. Go back to Sign in and enter your password again."
+          : useBackup && error.code === "INVALID_BACKUP_CODE"
+            ? "That backup code didn't work, or it was already used."
+            : error.code === "INVALID_CODE"
+              ? "That code didn't work. Codes change every 30 seconds, so use the one showing now."
+              : "Something went wrong checking your code. Please contact Brew Lab support.",
     );
   }
 
