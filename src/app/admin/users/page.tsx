@@ -14,6 +14,7 @@ const roleLabels: Record<string, string> = {
   customer: "Customer",
   branch_applicant: "Owner (unverified)",
   branch_manager: "Branch owner",
+  worker: "Worker",
   super_admin: "Admin",
   support_agent: "Support agent",
 };

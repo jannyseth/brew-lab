@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { employees, payrollEntries } from "@/db/schema";
+import { employees, payrollEntries, timeEntries } from "@/db/schema";
 import { addEmployee, setRecordsEmail, updateEmployee } from "@/app/actions/branch";
+import { saveTimeEntry } from "@/app/actions/lounge";
 import { ActionForm } from "@/components/action-form";
-import { cardClass, formatDate, inputClass } from "@/components/ui";
+import { cardClass, formatDate, formatDateTime, inputClass } from "@/components/ui";
 import { getManagedBranch } from "@/lib/branch-access";
 import { formatCents } from "@/lib/drink";
 import { maskAccount } from "@/lib/pdf";
 import { requireUser } from "@/lib/session";
+import { LONG_SHIFT_HOURS, toLocalInput } from "@/lib/workers";
 import { BranchHeader } from "../branch-header";
 import { DeleteEntryButton, EmployeeToggle, ResendPayslipButton } from "./payroll-buttons";
 import { PayrollForm } from "./payroll-form";
@@ -82,6 +84,50 @@ function EmployeeFields({ e }: { e?: EmployeeDefaults }) {
   );
 }
 
+/** Times and reason for adding or fixing a shift. Saving needs the owner's password. */
+function ShiftFields({ entry, staff }: { entry?: { employeeId: number; clockIn: Date; clockOut: Date | null }; staff: { id: number; name: string }[] }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
+      {entry ? (
+        <input type="hidden" name="employeeId" value={entry.employeeId} />
+      ) : (
+        <label className="block text-sm font-medium sm:col-span-2">
+          Employee
+          <select name="employeeId" className={inputClass}>
+            {staff.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <label className="block text-sm font-medium">
+        Clock in
+        <input name="clockIn" type="datetime-local" required defaultValue={entry ? toLocalInput(entry.clockIn) : undefined} className={inputClass} />
+      </label>
+      <label className="block text-sm font-medium">
+        Clock out
+        <input
+          name="clockOut"
+          type="datetime-local"
+          required
+          defaultValue={entry?.clockOut ? toLocalInput(entry.clockOut) : undefined}
+          className={inputClass}
+        />
+      </label>
+      <label className="block text-sm font-medium">
+        Reason
+        <input name="note" required minLength={3} maxLength={200} placeholder="Forgot to clock out" className={inputClass} />
+      </label>
+      <label className="block text-sm font-medium">
+        Your password
+        <input name="password" type="password" required autoComplete="current-password" className={inputClass} />
+      </label>
+    </div>
+  );
+}
+
 export default async function PayrollPage({ params }: PageProps<"/branch/[branchId]/payroll">) {
   const { branchId } = await params;
   const user = await requireUser(`/branch/${branchId}/payroll`);
@@ -115,6 +161,14 @@ export default async function PayrollPage({ params }: PageProps<"/branch/[branch
     .limit(6);
 
   const active = staff.filter((s) => s.active);
+
+  const shifts = await db
+    .select({ entry: timeEntries, employeeName: employees.name })
+    .from(timeEntries)
+    .innerJoin(employees, eq(timeEntries.employeeId, employees.id))
+    .where(eq(timeEntries.branchId, branch.id))
+    .orderBy(desc(timeEntries.clockIn))
+    .limit(40);
 
   return (
     <div>
@@ -190,6 +244,51 @@ export default async function PayrollPage({ params }: PageProps<"/branch/[branch
           </details>
         </section>
       </div>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold">Time clock</h2>
+        <p className="mb-3 text-sm text-muted">
+          Shifts from the counter QR code. Payroll hours are added up from these. Fixing or adding a shift needs your password and is logged.
+        </p>
+        {shifts.length > 0 && (
+          <ul className="mb-4 divide-y divide-line rounded-2xl border border-line bg-card text-sm">
+            {shifts.map(({ entry, employeeName }) => {
+              const end = entry.clockOut ?? new Date();
+              const hours = (end.getTime() - entry.clockIn.getTime()) / 3_600_000;
+              const suspicious = hours > LONG_SHIFT_HOURS;
+              return (
+                <li key={entry.id} className="px-4 py-3">
+                  <details>
+                    <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
+                      <span>
+                        <span className="font-medium">{employeeName}</span> · {formatDateTime(entry.clockIn)} →{" "}
+                        {entry.clockOut ? formatDateTime(entry.clockOut) : "still on the clock"}
+                        {entry.source === "manual" && <span className="block text-xs text-muted">Set by hand: {entry.editNote}</span>}
+                        {suspicious && <span className="block text-xs font-medium text-red-600">Over {LONG_SHIFT_HOURS} hours. Forgot to clock out?</span>}
+                      </span>
+                      <span className="flex items-center gap-3">
+                        <span className="tabular-nums text-muted">{entry.clockOut ? `${hours.toFixed(2)} h` : "open"}</span>
+                        <span className="text-xs text-accent">🔒 Fix</span>
+                      </span>
+                    </summary>
+                    <ActionForm action={saveTimeEntry.bind(null, branch.id, entry.id)} submitLabel="Save shift" className="mt-4">
+                      <ShiftFields entry={entry} staff={active} />
+                    </ActionForm>
+                  </details>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {active.length > 0 && (
+          <details className={cardClass}>
+            <summary className="cursor-pointer font-medium">🔒 Add a shift by hand</summary>
+            <ActionForm action={saveTimeEntry.bind(null, branch.id, null)} submitLabel="Add shift" className="mt-4">
+              <ShiftFields staff={active} />
+            </ActionForm>
+          </details>
+        )}
+      </section>
 
       <section className="mt-10">
         <h2 className="mb-3 text-lg font-semibold">Monthly totals</h2>

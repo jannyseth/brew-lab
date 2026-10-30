@@ -64,6 +64,13 @@
       "when": 1793376984139,
       "tag": "0008_receipt_shares",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793391703706,
+      "tag": "0009_workers_lounge",
+      "breakpoints": true
     }
   ]
 }

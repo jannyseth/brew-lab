@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 
-/** One branch, three tabs: everything about it in one place. */
+/** One branch, four tabs: everything about it in one place. */
 export function BranchTabs() {
   const { branchId } = useParams<{ branchId: string }>();
   const pathname = usePathname();
@@ -11,6 +11,11 @@ export function BranchTabs() {
   const tabs = [
     { href: base, label: "Dashboard & sales", active: pathname === base },
     { href: `${base}/orders`, label: "Orders", active: pathname.startsWith(`${base}/orders`) },
+    {
+      href: `${base}/lounge`,
+      label: "Employee lounge",
+      active: pathname.startsWith(`${base}/lounge`) || pathname.startsWith(`${base}/clock`),
+    },
     { href: `${base}/payroll`, label: "Payroll", active: pathname.startsWith(`${base}/payroll`) },
   ];
   return (

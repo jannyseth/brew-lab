@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { eq } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { emailOTP, twoFactor } from "better-auth/plugins";
@@ -12,9 +12,10 @@ import { sendAuthCode } from "./mail";
 
 // branch_applicant: signed up as a branch owner, waiting for the super admin.
 // support_agent: answers the support inbox and sees nothing else in the admin area.
+// worker: hired by a branch through an invite link; clocks in, chats with the branch.
 // needs_two_factor: a super_admin or support_agent who hasn't turned on two-factor
 // sign-in yet. Never stored; getSession reports it so every staff check fails closed.
-export type Role = "customer" | "branch_applicant" | "branch_manager" | "super_admin" | "support_agent" | "needs_two_factor";
+export type Role = "customer" | "branch_applicant" | "branch_manager" | "worker" | "super_admin" | "support_agent" | "needs_two_factor";
 export const staffRoles: string[] = ["super_admin", "support_agent"];
 export type AccountType = "customer" | "branch";
 
@@ -58,8 +59,25 @@ export const auth = betterAuth({
       if (ctx.body?.acceptedTerms !== true) {
         throw new APIError("BAD_REQUEST", { message: "Please accept the Terms of Use and Privacy Notice." });
       }
-      if (ctx.body?.accountType !== "customer" && ctx.body?.accountType !== "branch") {
+      const type = ctx.body?.accountType;
+      if (type !== "customer" && type !== "branch" && type !== "worker") {
         throw new APIError("BAD_REQUEST", { message: "Choose a customer or branch account." });
+      }
+      // Worker accounts are made only from a branch's open invite link.
+      if (type === "worker") {
+        const token = typeof ctx.body?.inviteToken === "string" ? ctx.body.inviteToken : "";
+        const [invite] = await db
+          .select({ token: schema.workerInvites.token })
+          .from(schema.workerInvites)
+          .where(
+            and(
+              eq(schema.workerInvites.token, token),
+              isNull(schema.workerInvites.usedAt),
+              isNull(schema.workerInvites.revokedAt),
+              gt(schema.workerInvites.expiresAt, new Date()),
+            ),
+          );
+        if (!invite) throw new APIError("BAD_REQUEST", { message: "This invite link has expired or was already used. Ask the branch for a new one." });
       }
     }),
     after: createAuthMiddleware(async (ctx) => {
@@ -81,12 +99,15 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          const accountType = (user as { accountType?: string }).accountType === "branch" ? "branch" : "customer";
+          const requested = (user as { accountType?: string }).accountType;
+          const accountType = requested === "branch" || requested === "worker" ? requested : "customer";
           const role: Role = superAdminEmails.includes(user.email.toLowerCase())
             ? "super_admin"
             : accountType === "branch"
               ? "branch_applicant"
-              : "customer";
+              : accountType === "worker"
+                ? "worker"
+                : "customer";
           const analyticsConsent = (user as { analyticsConsent?: unknown }).analyticsConsent === true;
           return {
             data: {

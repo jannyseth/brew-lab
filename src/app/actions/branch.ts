@@ -1,17 +1,18 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { db } from "@/db";
-import { branches, employees, managerApplications, orders, payrollEntries } from "@/db/schema";
+import { branches, employees, managerApplications, orders, payrollEntries, timeEntries } from "@/db/schema";
 import type { FormState } from "@/components/action-form";
 import { logActivity } from "@/lib/audit";
 import { authorizeBranch } from "@/lib/branch-access";
 import { awardCoinsForOrder, voidCoinsForOrder } from "@/lib/coins";
 import { emailPayslip } from "@/lib/payslips";
 import { getSession } from "@/lib/session";
+import { clockedHours, confirmOwnPassword } from "@/lib/workers";
 
 const fail = (message: string): FormState => ({ ok: false, message });
 const notAllowed = fail("You don't have access to this branch.");
@@ -239,6 +240,13 @@ export async function setEmployeeActive(branchId: number, employeeId: number, ac
     .update(employees)
     .set({ active })
     .where(and(eq(employees.id, employeeId), eq(employees.branchId, branchId)));
+  // Archiving also takes away the lounge and the clock; close a shift left open so hours stop growing.
+  if (!active) {
+    await db
+      .update(timeEntries)
+      .set({ clockOut: new Date() })
+      .where(and(eq(timeEntries.employeeId, employeeId), eq(timeEntries.branchId, branchId), isNull(timeEntries.clockOut)));
+  }
   await logActivity({
     ...access.viewer,
     action: active ? "employee.restored" : "employee.archived",
@@ -247,6 +255,7 @@ export async function setEmployeeActive(branchId: number, employeeId: number, ac
     details: { branchId },
   });
   revalidatePath(`/branch/${branchId}/payroll`);
+  revalidatePath(`/branch/${branchId}/lounge`);
   return { ok: true, message: active ? "Employee reactivated." : "Employee archived." };
 }
 
@@ -259,7 +268,9 @@ export async function logPayroll(branchId: number, _: FormState, data: FormData)
       employeeId: z.coerce.number().int().positive(),
       periodStart: z.iso.date(),
       periodEnd: z.iso.date(),
-      hours: z.coerce.number().min(0).max(744),
+      // Only when the owner changes the clocked hours by hand.
+      overrideHours: z.union([z.literal(""), z.coerce.number().min(0).max(744)]).optional(),
+      password: z.string().optional(),
       amount: money,
       note: z.string().trim().max(200),
     })
@@ -275,6 +286,14 @@ export async function logPayroll(branchId: number, _: FormState, data: FormData)
     .where(and(eq(employees.id, entry.employeeId), eq(employees.branchId, branchId)));
   if (!employee) return fail("Choose an employee from this branch.");
 
+  // Hours come from the clock. Typing different hours needs the owner's password and is logged.
+  const clocked = (await clockedHours([entry.employeeId], entry.periodStart, entry.periodEnd)).get(entry.employeeId)?.hours ?? 0;
+  const override = typeof entry.overrideHours === "number" ? entry.overrideHours : null;
+  if (override !== null && !(await confirmOwnPassword(entry.password ?? ""))) {
+    return fail("That password isn't right. Use the password you sign in with to change hours.");
+  }
+  const hours = override ?? clocked;
+
   const amountCents = Math.round(entry.amount * 100);
   const [row] = await db
     .insert(payrollEntries)
@@ -283,7 +302,7 @@ export async function logPayroll(branchId: number, _: FormState, data: FormData)
       employeeId: entry.employeeId,
       periodStart: entry.periodStart,
       periodEnd: entry.periodEnd,
-      hours: entry.hours.toFixed(2),
+      hours: hours.toFixed(2),
       amountCents,
       note: entry.note,
       recordedBy: access.viewer.userId,
@@ -294,7 +313,7 @@ export async function logPayroll(branchId: number, _: FormState, data: FormData)
     action: "payroll.logged",
     targetType: "payroll",
     targetId: row.id,
-    details: { branchId, employeeId: entry.employeeId, amountCents },
+    details: { branchId, employeeId: entry.employeeId, amountCents, hours, clockedHours: clocked, hoursChangedByHand: override !== null },
   });
   // Email the payslip PDF to the employee and the records inbox once the response is sent.
   after(() => emailPayslip(row.id));

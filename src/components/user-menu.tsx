@@ -52,6 +52,11 @@ export async function UserMenu() {
           Branch dashboard
         </Link>
       )}
+      {role === "worker" && (
+        <Link href="/work" className="hover:text-accent">
+          Work
+        </Link>
+      )}
       {role === "super_admin" && (
         <Link href="/admin" className="hover:text-accent">
           Admin

@@ -20,6 +20,7 @@ export default async function AccountPage() {
   if (user.role === "super_admin") redirect("/admin");
   if (user.role === "support_agent") redirect("/admin/support");
   if (user.role === "branch_manager" || user.role === "branch_applicant") redirect("/branch");
+  if (user.role === "worker") redirect("/work");
 
   const rows = await db
     .select({

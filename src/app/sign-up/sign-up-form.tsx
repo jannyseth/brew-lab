@@ -11,10 +11,11 @@ const accountTypes = [
   { value: "branch", title: "Branch owner", body: "Run one or more branches. Verified by our admin before you can start." },
 ] as const;
 
-export function SignUpForm() {
+/** With `invite` (a branch's hiring link) it makes a worker account and returns to the join page. */
+export function SignUpForm({ invite }: { invite?: string }) {
   const router = useRouter();
   const [step, setStep] = useState<"details" | "verify">("details");
-  const [accountType, setAccountType] = useState<"customer" | "branch">("customer");
+  const [accountType, setAccountType] = useState<"customer" | "branch" | "worker">(invite ? "worker" : "customer");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +38,7 @@ export function SignUpForm() {
       accountType,
       analyticsConsent: accountType === "customer" && offers,
       // Checked again on the server: sign-up is refused without consent.
-      ...({ acceptedTerms: accepted } as object),
+      ...({ acceptedTerms: accepted, inviteToken: invite } as object),
     });
     setBusy(false);
     if (error) {
@@ -59,7 +60,7 @@ export function SignUpForm() {
       setBusy(false);
       return setError(error.message ?? "That code didn't work.");
     }
-    router.replace("/account");
+    router.replace(invite ? `/join/${invite}` : "/account");
     router.refresh();
   }
 
@@ -90,7 +91,7 @@ export function SignUpForm() {
 
   return (
     <form onSubmit={signUp} className="mt-8">
-      <fieldset>
+      <fieldset hidden={!!invite}>
         <legend className="text-sm font-medium">Account type</legend>
         <div className="mt-2 grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-2">
           {accountTypes.map((t) => (

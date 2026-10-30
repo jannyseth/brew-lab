@@ -16,6 +16,7 @@ const accountLabels: Record<string, string> = {
   customer: "Customer",
   branch_applicant: "Branch owner (waiting for verification)",
   branch_manager: "Verified branch owner",
+  worker: "Branch worker",
   super_admin: "Administrator",
   support_agent: "Brew Lab support",
 };

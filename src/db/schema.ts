@@ -13,6 +13,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { user } from "./auth-schema";
 
 export * from "./auth-schema";
@@ -180,21 +181,25 @@ export const orders = pgTable(
   (t) => [index("orders_branch_idx").on(t.branchId, t.createdAt), index("orders_user_idx").on(t.userId)],
 );
 
-export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id")
-    .notNull()
-    .references(() => orders.id, { onDelete: "cascade" }),
-  menuItemId: integer("menu_item_id").references(() => menuItems.id, { onDelete: "set null" }),
-  // Snapshot of what was ordered, so later menu edits don't change past orders.
-  drinkName: text("drink_name").notNull(),
-  summary: text("summary").notNull(),
-  selection: jsonb("selection").$type<Record<string, number>>().notNull(),
-  unitPriceCents: integer("unit_price_cents").notNull(),
-  quantity: integer("quantity").notNull(),
-  // Set when the line is someone's published signature drink, so its creator earns coins.
-  signatureDrinkId: integer("signature_drink_id").references(() => signatureDrinks.id, { onDelete: "set null" }),
-}, (t) => [index("order_items_signature_idx").on(t.signatureDrinkId)]);
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: serial("id").primaryKey(),
+    orderId: integer("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    menuItemId: integer("menu_item_id").references(() => menuItems.id, { onDelete: "set null" }),
+    // Snapshot of what was ordered, so later menu edits don't change past orders.
+    drinkName: text("drink_name").notNull(),
+    summary: text("summary").notNull(),
+    selection: jsonb("selection").$type<Record<string, number>>().notNull(),
+    unitPriceCents: integer("unit_price_cents").notNull(),
+    quantity: integer("quantity").notNull(),
+    // Set when the line is someone's published signature drink, so its creator earns coins.
+    signatureDrinkId: integer("signature_drink_id").references(() => signatureDrinks.id, { onDelete: "set null" }),
+  },
+  (t) => [index("order_items_signature_idx").on(t.signatureDrinkId)],
+);
 
 // Customers publish a saved recipe as a "signature drink". It goes public only
 // after the admin approves it, and the recipe is locked: edits mean a new drink.
@@ -259,23 +264,30 @@ export const coinEntries = pgTable(
 );
 
 // Payroll is a record only; the app never moves money.
-export const employees = pgTable("employees", {
-  id: serial("id").primaryKey(),
-  branchId: integer("branch_id")
-    .notNull()
-    .references(() => branches.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  position: text("position").notNull(),
-  hourlyRateCents: integer("hourly_rate_cents").notNull(),
-  // Payslips are emailed here.
-  email: text("email"),
-  // Where the owner sends this employee's pay, printed on payslips: bank, GCash, Maya or cash.
-  payoutMethod: text("payout_method"),
-  payoutAccountName: text("payout_account_name"),
-  payoutAccountNumber: text("payout_account_number"),
-  active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const employees = pgTable(
+  "employees",
+  {
+    id: serial("id").primaryKey(),
+    branchId: integer("branch_id")
+      .notNull()
+      .references(() => branches.id, { onDelete: "cascade" }),
+    // The worker's own account, when they joined through an invite link. Staff the
+    // owner added by hand have none and can't clock in or chat.
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    name: text("name").notNull(),
+    position: text("position").notNull(),
+    hourlyRateCents: integer("hourly_rate_cents").notNull(),
+    // Payslips are emailed here.
+    email: text("email"),
+    // Where the owner sends this employee's pay, printed on payslips: bank, GCash, Maya or cash.
+    payoutMethod: text("payout_method"),
+    payoutAccountName: text("payout_account_name"),
+    payoutAccountNumber: text("payout_account_number"),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("employees_branch_user_idx").on(t.branchId, t.userId)],
+);
 
 export const payrollEntries = pgTable(
   "payroll_entries",
@@ -431,4 +443,115 @@ export const receiptShares = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [uniqueIndex("receipt_shares_order_idx").on(t.orderId), uniqueIndex("receipt_shares_week_idx").on(t.userId, t.weekStart)],
+);
+
+// Branches hire workers with a single-use invite link. The branch is the
+// employer; Brew Lab only provides the app.
+export const workerInvites = pgTable(
+  "worker_invites",
+  {
+    token: text("token").primaryKey(),
+    branchId: integer("branch_id")
+      .notNull()
+      .references(() => branches.id, { onDelete: "cascade" }),
+    position: text("position").notNull(),
+    hourlyRateCents: integer("hourly_rate_cents").notNull(),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id),
+    expiresAt: timestamp("expires_at").notNull(),
+    usedBy: text("used_by").references(() => user.id, { onDelete: "set null" }),
+    usedAt: timestamp("used_at"),
+    revokedAt: timestamp("revoked_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("worker_invites_branch_idx").on(t.branchId, t.createdAt)],
+);
+
+// Clock-ins from the rotating QR code at the counter. Payroll hours are
+// summed from these; changing them by hand needs the branch owner's password.
+export const timeEntries = pgTable(
+  "time_entries",
+  {
+    id: serial("id").primaryKey(),
+    branchId: integer("branch_id")
+      .notNull()
+      .references(() => branches.id, { onDelete: "cascade" }),
+    employeeId: integer("employee_id")
+      .notNull()
+      .references(() => employees.id, { onDelete: "cascade" }),
+    clockIn: timestamp("clock_in").notNull(),
+    clockOut: timestamp("clock_out"),
+    // "qr" from the counter code, "manual" when the owner typed or fixed the times.
+    source: text("source").notNull().default("qr"),
+    editedBy: text("edited_by").references(() => user.id, { onDelete: "set null" }),
+    editNote: text("edit_note").notNull().default(""),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("time_entries_branch_idx").on(t.branchId, t.clockIn),
+    index("time_entries_employee_idx").on(t.employeeId, t.clockIn),
+    // Only one open shift per person.
+    uniqueIndex("time_entries_open_idx")
+      .on(t.employeeId)
+      .where(sql`${t.clockOut} is null`),
+  ],
+);
+
+// The employee lounge chat. Every conversation belongs to one branch:
+// "branch" is everyone there (owner and active workers), "dm" is two people,
+// "group" is a chat someone made with chosen coworkers.
+export const conversationKind = pgEnum("conversation_kind", ["branch", "dm", "group"]);
+
+export const conversations = pgTable(
+  "conversations",
+  {
+    id: serial("id").primaryKey(),
+    branchId: integer("branch_id")
+      .notNull()
+      .references(() => branches.id, { onDelete: "cascade" }),
+    kind: conversationKind("kind").notNull(),
+    title: text("title"),
+    // "branchId:userA:userB" with the two ids sorted, so a pair has one DM per branch.
+    dmKey: text("dm_key").unique(),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    lastMessageAt: timestamp("last_message_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("conversations_branch_idx").on(t.branchId, t.lastMessageAt),
+    uniqueIndex("conversations_branch_group_idx")
+      .on(t.branchId)
+      .where(sql`${t.kind} = 'branch'`),
+  ],
+);
+
+// Members of DMs and groups. For the branch-wide chat, rows only track what each person has read.
+export const conversationMembers = pgTable(
+  "conversation_members",
+  {
+    conversationId: integer("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    lastReadAt: timestamp("last_read_at"),
+    joinedAt: timestamp("joined_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.conversationId, t.userId] }), index("conversation_members_user_idx").on(t.userId)],
+);
+
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: serial("id").primaryKey(),
+    conversationId: integer("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("chat_messages_conversation_idx").on(t.conversationId, t.id)],
 );
