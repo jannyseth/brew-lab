@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
-import { auth, type Role } from "./auth";
+import { auth, staffRoles, type Role } from "./auth";
 
 // Every page and server action checks the session itself; there is no
 // middleware to rely on, so a missing check can't be bypassed by routing.
@@ -11,7 +11,13 @@ import { auth, type Role } from "./auth";
 export const getSession = cache(async () => {
   // Session checks read the clock (expiry), so they must always run per request.
   await connection();
-  return auth.api.getSession({ headers: await headers() });
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (session && staffRoles.includes(session.user.role ?? "") && !session.user.twoFactorEnabled) {
+    // Staff powers stay locked until two-factor sign-in is on, so every role check
+    // (pages, server actions, API routes) fails closed without changing each one.
+    return { ...session, user: { ...session.user, role: "needs_two_factor" as Role } };
+  }
+  return session;
 });
 
 export async function requireUser(returnTo = "/") {
@@ -22,6 +28,7 @@ export async function requireUser(returnTo = "/") {
 
 export async function requireRole(roles: Role[], returnTo = "/") {
   const user = await requireUser(returnTo);
+  if (user.role === "needs_two_factor") redirect("/account/two-factor");
   // Wrong kind of account: send them to their own home instead.
   if (!roles.includes(user.role)) redirect("/account");
   return user;

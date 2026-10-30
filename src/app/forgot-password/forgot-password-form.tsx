@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authButton, authInput, CodeInput, FormError, PasswordInput } from "@/components/auth-ui";
+import { TwoFactorStep } from "@/components/two-factor-step";
 import { authClient } from "@/lib/auth-client";
 
 export function ForgotPasswordForm() {
   const router = useRouter();
-  const [step, setStep] = useState<"email" | "reset">("email");
+  const [step, setStep] = useState<"email" | "reset" | "two-factor">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
@@ -39,9 +40,17 @@ export function ForgotPasswordForm() {
     }
     const signIn = await authClient.signIn.email({ email, password });
     if (signIn.error) return router.replace("/sign-in");
+    // A new password doesn't skip two-factor sign-in.
+    if ("twoFactorRedirect" in signIn.data) return setStep("two-factor");
+    finish();
+  }
+
+  function finish() {
     router.replace("/account");
     router.refresh();
   }
+
+  if (step === "two-factor") return <TwoFactorStep onDone={finish} />;
 
   if (step === "reset") {
     return (

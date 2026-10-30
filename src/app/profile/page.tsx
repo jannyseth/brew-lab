@@ -41,6 +41,18 @@ export default async function ProfilePage() {
         </ActionForm>
       </section>
 
+      <section className={`${cardClass} mt-6`}>
+        <h2 className="font-semibold">Two-factor sign-in</h2>
+        <p className="mt-1 text-sm text-muted">
+          {me.twoFactorEnabled
+            ? "On. Signing in needs your password and a code from your authenticator app."
+            : "Off. Add a code from your phone to your password so a stolen password isn't enough."}
+        </p>
+        <Link href="/account/two-factor" className="mt-3 inline-block text-sm font-medium text-accent">
+          {me.twoFactorEnabled ? "Manage" : "Set up"}
+        </Link>
+      </section>
+
       {me.role === "customer" && (
         <section className={`${cardClass} mt-6`}>
           <h2 className="font-semibold">Personalized offers</h2>

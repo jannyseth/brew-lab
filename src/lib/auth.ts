@@ -3,7 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { eq } from "drizzle-orm";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, twoFactor } from "better-auth/plugins";
 import { after } from "next/server";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -12,7 +12,10 @@ import { sendAuthCode } from "./mail";
 
 // branch_applicant: signed up as a branch owner, waiting for the super admin.
 // support_agent: answers the support inbox and sees nothing else in the admin area.
-export type Role = "customer" | "branch_applicant" | "branch_manager" | "super_admin" | "support_agent";
+// needs_two_factor: a super_admin or support_agent who hasn't turned on two-factor
+// sign-in yet. Never stored; getSession reports it so every staff check fails closed.
+export type Role = "customer" | "branch_applicant" | "branch_manager" | "super_admin" | "support_agent" | "needs_two_factor";
+export const staffRoles: string[] = ["super_admin", "support_agent"];
 export type AccountType = "customer" | "branch";
 
 const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS ?? "")
@@ -58,6 +61,20 @@ export const auth = betterAuth({
       if (ctx.body?.accountType !== "customer" && ctx.body?.accountType !== "branch") {
         throw new APIError("BAD_REQUEST", { message: "Choose a customer or branch account." });
       }
+    }),
+    after: createAuthMiddleware(async (ctx) => {
+      const session = ctx.context.session;
+      if (!session || ctx.context.returned instanceof APIError) return;
+      // Verifying an app code while signed in without 2FA is the last step of turning it on.
+      const action =
+        ctx.path === "/two-factor/verify-totp" && !session.user.twoFactorEnabled
+          ? "auth.two_factor_enabled"
+          : ctx.path === "/two-factor/disable"
+            ? "auth.two_factor_disabled"
+            : ctx.path === "/two-factor/generate-backup-codes"
+              ? "auth.backup_codes_regenerated"
+              : null;
+      if (action) await logActivity({ userId: session.user.id, userEmail: session.user.email, action });
     }),
   },
   databaseHooks: {
@@ -130,6 +147,13 @@ export const auth = betterAuth({
         // Sent after the response so response timing doesn't reveal whether the email exists.
         after(() => sendAuthCode(email, otp, type));
       },
+    }),
+    twoFactor({
+      issuer: "Brew Lab",
+      backupCodeOptions: { amount: 10, storeBackupCodes: "encrypted" },
+      // "Trust this device" skips the code on that browser for 30 days.
+      trustDeviceMaxAge: 60 * 60 * 24 * 30,
+      accountLockout: { enabled: true, maxFailedAttempts: 5, durationSeconds: 15 * 60 },
     }),
     nextCookies(),
   ],

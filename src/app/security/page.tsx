@@ -16,6 +16,10 @@ export default function SecurityPage() {
           <li>Passwords are stored only as a salted, one-way hash (scrypt). Nobody at Brew Lab can read them.</li>
           <li>New accounts must confirm their email with a 6-digit code before they can sign in.</li>
           <li>Email codes expire after 10 minutes and are locked after 3 wrong attempts.</li>
+          <li>
+            You can turn on two-factor sign-in from your profile, so signing in also needs a code from an authenticator app.
+            Brew Lab staff must use it. Ten one-time backup codes cover a lost phone.
+          </li>
           <li>Repeated sign-in or code requests from the same place are slowed down to stop guessing attacks.</li>
           <li>Resetting your password signs you out everywhere else.</li>
           <li>Sessions use a secure, HTTP-only cookie and end after 7 days.</li>

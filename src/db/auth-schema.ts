@@ -26,6 +26,7 @@ export const user = pgTable("user", {
   // Optional, separate consent to use order history for personalized offers and analytics.
   analyticsConsent: boolean("analytics_consent").default(false).notNull(),
   analyticsConsentAt: timestamp("analytics_consent_at"),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
 });
 
 export const session = pgTable(
@@ -85,6 +86,23 @@ export const verification = pgTable(
       .notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
+
+// Authenticator-app secret and hashed backup codes for two-factor sign-in.
+export const twoFactor = pgTable(
+  "two_factor",
+  {
+    id: text("id").primaryKey(),
+    secret: text("secret").notNull(),
+    backupCodes: text("backup_codes").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    verified: boolean("verified").default(true),
+    failedVerificationCount: integer("failed_verification_count").default(0),
+    lockedUntil: timestamp("locked_until"),
+  },
+  (table) => [index("twoFactor_secret_idx").on(table.secret), index("twoFactor_userId_idx").on(table.userId)],
 );
 
 export const rateLimit = pgTable("rate_limit", {

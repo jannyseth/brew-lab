@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authButton, authInput, CodeInput, FormError, PasswordInput } from "@/components/auth-ui";
+import { TwoFactorStep } from "@/components/two-factor-step";
 import { authClient, safeNext } from "@/lib/auth-client";
 
 export function SignInForm() {
   const router = useRouter();
-  const [step, setStep] = useState<"password" | "verify">("password");
+  const [step, setStep] = useState<"password" | "verify" | "two-factor">("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -24,8 +25,8 @@ export function SignInForm() {
     e.preventDefault();
     setBusy(true);
     setError("");
-    const { error } = await authClient.signIn.email({ email, password });
-    if (!error) return finish();
+    const { data, error } = await authClient.signIn.email({ email, password });
+    if (!error) return afterPassword(data);
     setBusy(false);
     if (error.code === "EMAIL_NOT_VERIFIED") {
       // The account exists but its email was never confirmed: send a fresh code.
@@ -38,6 +39,15 @@ export function SignInForm() {
           : "Wrong email or password. Accounts made before passwords were introduced need to set one first: use “Forgot password?” below.",
       );
     }
+  }
+
+  // Accounts with two-factor sign-in still need an app code after the password.
+  function afterPassword(data: unknown) {
+    if (data && typeof data === "object" && "twoFactorRedirect" in data) {
+      setBusy(false);
+      return setStep("two-factor");
+    }
+    finish();
   }
 
   async function verify(e: React.FormEvent) {
@@ -55,8 +65,10 @@ export function SignInForm() {
       setBusy(false);
       return setError("Email confirmed. Please sign in again.");
     }
-    finish();
+    afterPassword(result.data);
   }
+
+  if (step === "two-factor") return <TwoFactorStep onDone={finish} />;
 
   if (step === "verify") {
     return (
