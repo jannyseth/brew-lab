@@ -139,6 +139,49 @@ body {
 .box-fly { animation: box-fly 750ms cubic-bezier(.5,0,.75,0) forwards; }
 .station-in { animation: station-in 350ms cubic-bezier(.2,.8,.2,1); }
 
+/* The cup stays alive while idle */
+@keyframes liquid-wave { to { transform: translateX(-40px); } }
+@keyframes cup-bubble {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 0.7; }
+  90% { opacity: 0.5; }
+  100% { transform: translateY(var(--rise)); opacity: 0; }
+}
+@keyframes ice-bob { 50% { transform: translateY(-3px); } }
+@keyframes cup-float { 50% { transform: translateY(-6px); } }
+@keyframes price-float {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  20% { transform: translateY(-4px) scale(1.1); opacity: 1; }
+  100% { transform: translateY(-34px) scale(1); opacity: 0; }
+}
+@keyframes combo-pop {
+  0% { transform: translate(-50%, 12px) scale(0.6); opacity: 0; }
+  12% { transform: translate(-50%, 0) scale(1.08); opacity: 1; }
+  20% { transform: translate(-50%, 0) scale(1); }
+  85% { opacity: 1; }
+  100% { transform: translate(-50%, -8px) scale(1); opacity: 0; }
+}
+@keyframes confetti {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 0; }
+}
+@keyframes stamp {
+  0% { transform: translate(-50%, 0) scale(2.2) rotate(-14deg); opacity: 0; }
+  60% { transform: translate(-50%, 0) scale(0.95) rotate(-8deg); opacity: 1; }
+  100% { transform: translate(-50%, 0) scale(1) rotate(-8deg); opacity: 1; }
+}
+.liquid-wave { animation: liquid-wave 1.6s linear infinite; }
+.cup-bubble { transform-box: fill-box; opacity: 0; animation: cup-bubble 2.6s ease-in infinite; }
+.ice-bob { animation: ice-bob 2.4s ease-in-out infinite; }
+.cup-float { animation: cup-float 3.2s ease-in-out infinite; }
+.price-float { animation: price-float 900ms ease-out forwards; }
+.combo-pop { animation: combo-pop 2.6s cubic-bezier(.2,.8,.2,1) forwards; }
+.confetti { animation: confetti 1.1s cubic-bezier(.15,.7,.4,1) forwards; }
+.stamp { animation: stamp 500ms cubic-bezier(.3,1.4,.5,1) both; }
+
 @media (prefers-reduced-motion: reduce) {
-  .token-pop, .token-shake, .box-rise, .box-flap-left, .box-flap-right, .box-fly, .station-in { animation: none !important; }
+  .token-pop, .token-shake, .box-rise, .box-flap-left, .box-flap-right, .box-fly, .station-in,
+  .liquid-wave, .ice-bob, .cup-float, .price-float, .confetti, .stamp { animation: none !important; }
+  .cup-bubble, .confetti, .price-float { display: none; }
+  .combo-pop { animation: none !important; transform: translate(-50%, 0); }
 }

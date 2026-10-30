@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { branches, orderItems, orders } from "@/db/schema";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { ReceiptShare } from "@/components/receipt-share";
 import { Badge, buttonPrimary, cardClass, formatDateTime } from "@/components/ui";
 import { HOLD_DAYS, PURCHASE_COINS } from "@/lib/coin-rules";
 import { formatCents } from "@/lib/drink";
@@ -38,8 +39,8 @@ export default async function OrderPage({ params }: PageProps<"/orders/[id]">) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       {active && <AutoRefresh seconds={15} />}
-      <Link href="/orders" className="text-sm text-muted hover:text-accent">
-        ← All orders
+      <Link href="/account" className="text-sm text-muted hover:text-accent">
+        ← Your account
       </Link>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-4xl font-semibold tracking-tight">Order #{order.order.id}</h1>
@@ -92,6 +93,7 @@ export default async function OrderPage({ params }: PageProps<"/orders/[id]">) {
         <Link href={`/orders/${order.order.id}/receipt`} className="text-sm text-muted hover:text-accent">
           View or print
         </Link>
+        {status !== "cancelled" && <ReceiptShare target={{ orderId: order.order.id }} label="Share receipt" />}
       </div>
       {status === "completed" && (
         <p className="mt-6 text-sm text-muted">

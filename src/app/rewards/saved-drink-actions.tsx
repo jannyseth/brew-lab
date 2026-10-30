@@ -21,7 +21,7 @@ export function SavedDrinkActions({ id, slug, drinkName, summary, selection, pri
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-4 text-sm font-medium">
+    <div className="mt-3 flex flex-wrap items-center gap-4 text-sm font-medium">
       {priceCents !== null && (
         <button
           type="button"
@@ -29,17 +29,17 @@ export function SavedDrinkActions({ id, slug, drinkName, summary, selection, pri
             cart.add({ slug, drinkName, summary, selection, unitPriceCents: priceCents, quantity: 1 });
             setAdded(true);
           }}
-          className="rounded-full bg-accent px-4 py-2 text-accent-contrast hover:opacity-90"
+          className="rounded-full bg-accent px-4 py-1.5 text-accent-contrast hover:opacity-90"
         >
           {added ? "Added ✓" : "Add to order"}
         </button>
       )}
       <Link href={`/menu/${slug}#s=${encodeURIComponent(JSON.stringify(selection))}`} className="hover:text-accent">
-        Customize
+        Edit
       </Link>
       {priceCents !== null && (
         <Link href={`/saved/${id}/publish`} className="text-accent hover:underline">
-          Publish as signature drink
+          Publish
         </Link>
       )}
       <button

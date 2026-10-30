@@ -83,7 +83,7 @@ export default async function BranchOrdersPage({ params }: PageProps<"/branch/[b
   return (
     <div>
       <AutoRefresh seconds={20} />
-      <BranchHeader branch={branch} active="Orders" />
+      <BranchHeader branch={branch} />
       <h2 className="mb-4 text-lg font-semibold">Open orders ({open.length})</h2>
       {open.length === 0 ? (
         <p className="text-muted">No open orders right now. New orders appear here automatically.</p>

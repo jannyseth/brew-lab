@@ -1,16 +1,18 @@
 "use server";
 
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
-import { branches, creatorProfiles, menuItems, orderItems, orders, savedDrinks, signatureDrinks } from "@/db/schema";
+import { branches, creatorProfiles, menuItems, orderItems, orders, receiptShares, savedDrinks, signatureDrinks } from "@/db/schema";
 import { FREE_DRINK_COINS, HANDLE_PATTERN, signatureSlug } from "@/lib/coin-rules";
-import { spendCoins, voidCoinsForOrder } from "@/lib/coins";
+import { coinBalance, spendCoins, voidCoinsForOrder } from "@/lib/coins";
 import { describeSelection, priceDrink } from "@/lib/drink";
+import { imageUrl } from "@/lib/images";
 import { getDrink } from "@/lib/menu";
 import { logActivity } from "@/lib/audit";
 import { isOpenBranch, settleExpiredLicenses } from "@/lib/licenses";
+import { orderWeek } from "@/lib/receipt-share";
 import { getSession } from "@/lib/session";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string; signIn?: boolean };
@@ -56,7 +58,7 @@ export async function saveDrink(input: { slug: string; name: string; selection: 
     })
     .returning({ id: savedDrinks.id });
   await logActivity({ ...customer.actor, action: "drink.saved", targetType: "saved_drink", targetId: saved.id });
-  revalidatePath("/saved");
+  revalidatePath("/rewards");
   return { ok: true };
 }
 
@@ -66,7 +68,7 @@ export async function deleteSavedDrink(id: number): Promise<Result> {
   // The user ID check makes sure people can only delete their own drinks.
   await db.delete(savedDrinks).where(and(eq(savedDrinks.id, id), eq(savedDrinks.userId, customer.user.id)));
   await logActivity({ ...customer.actor, action: "drink.deleted", targetType: "saved_drink", targetId: id });
-  revalidatePath("/saved");
+  revalidatePath("/rewards");
   return { ok: true };
 }
 
@@ -88,6 +90,29 @@ const orderSchema = z.object({
     .max(20),
   useCoins: z.boolean().optional(),
 });
+
+export type CheckoutBranch = { id: number; name: string; address: string; hours: string; imageUrl: string | null };
+
+/** What the cart drawer needs to check out: open branches, the pickup name and spendable coins. */
+export async function getCheckoutInfo(): Promise<Result<{ branches: CheckoutBranch[]; defaultName: string; coins: number }>> {
+  const customer = await getCustomer();
+  if (customer.error) return customer.error;
+  await settleExpiredLicenses();
+  const [open, coins] = await Promise.all([
+    db
+      .select({ id: branches.id, name: branches.name, address: branches.address, hours: branches.hours, imageKey: branches.imageKey })
+      .from(branches)
+      .where(isOpenBranch)
+      .orderBy(asc(branches.name)),
+    coinBalance(customer.user.id),
+  ]);
+  return {
+    ok: true,
+    branches: open.map(({ imageKey, ...b }) => ({ ...b, imageUrl: imageUrl(imageKey) })),
+    defaultName: customer.user.name || customer.user.email.split("@")[0],
+    coins: coins.spendable,
+  };
+}
 
 export async function placeOrder(input: unknown): Promise<Result<{ orderId: number }>> {
   const customer = await getCustomer();
@@ -262,4 +287,43 @@ export async function updateCreatorProfile(input: unknown): Promise<Result> {
   revalidatePath("/rewards");
   revalidatePath("/leaderboard");
   return { ok: true };
+}
+
+/**
+ * Makes (or reuses) a private link to share one order's receipt or one week of
+ * orders. The link shows drinks and totals only, never names or notes.
+ */
+export async function shareReceipt(input: { orderId: number } | { weekStart: string }): Promise<Result<{ path: string }>> {
+  const customer = await getCustomer();
+  if (customer.error) return customer.error;
+  const userId = customer.user.id;
+
+  if ("orderId" in input) {
+    const [order] = await db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(and(eq(orders.id, input.orderId), eq(orders.userId, userId), ne(orders.status, "cancelled")));
+    if (!order) return { ok: false, error: "That order can't be shared." };
+    const [existing] = await db.select().from(receiptShares).where(eq(receiptShares.orderId, order.id));
+    if (existing) return { ok: true, path: `/r/${existing.token}` };
+    const token = crypto.randomUUID().replaceAll("-", "");
+    await db.insert(receiptShares).values({ token, userId, orderId: order.id }).onConflictDoNothing();
+    const [row] = await db.select().from(receiptShares).where(eq(receiptShares.orderId, order.id));
+    return { ok: true, path: `/r/${row.token}` };
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.weekStart)) return { ok: false, error: "That week can't be shared." };
+  const [any] = await db
+    .select({ id: orders.id })
+    .from(orders)
+    .where(and(eq(orders.userId, userId), ne(orders.status, "cancelled"), eq(orderWeek, input.weekStart)))
+    .limit(1);
+  if (!any) return { ok: false, error: "No orders that week." };
+  const token = crypto.randomUUID().replaceAll("-", "");
+  await db.insert(receiptShares).values({ token, userId, weekStart: input.weekStart }).onConflictDoNothing();
+  const [row] = await db
+    .select()
+    .from(receiptShares)
+    .where(and(eq(receiptShares.userId, userId), eq(receiptShares.weekStart, input.weekStart)));
+  return { ok: true, path: `/r/${row.token}` };
 }

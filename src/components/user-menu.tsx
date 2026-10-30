@@ -42,14 +42,8 @@ export async function UserMenu() {
         <>
           {menuLinks}
           <CartLink />
-          <Link href="/orders" className="hover:text-accent">
-            Orders
-          </Link>
-          <Link href="/saved" className="hover:text-accent">
-            Saved
-          </Link>
           <Link href="/rewards" className="hover:text-accent">
-            Rewards
+            Saved &amp; rewards
           </Link>
         </>
       )}
@@ -68,7 +62,7 @@ export async function UserMenu() {
           Support inbox
         </Link>
       )}
-      <Link href="/profile" className="flex items-center gap-2 hover:text-accent" aria-label="Your profile">
+      <Link href={role === "customer" ? "/account" : "/profile"} className="flex items-center gap-2 hover:text-accent" aria-label="Your account">
         <Avatar src={session.user.image} name={session.user.name || session.user.email} size={28} />
       </Link>
       <SignOutButton />

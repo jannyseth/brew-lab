@@ -65,10 +65,61 @@ const TOKEN: Record<string, { color: string; emoji?: string }> = {
 };
 const SIZE_HEIGHT: Record<string, number> = { small: 18, medium: 23, large: 28 };
 
+/** Pairings that unlock a named combo when they meet in the cup. */
+const COMBOS: { id: string; name: string; emoji: string; test: (s: Selection) => boolean }[] = [
+  { id: "caramel", name: "Caramel Lover", emoji: "🍮", test: (s) => has(s, "caramel-syrup") && has(s, "caramel-drizzle") },
+  { id: "mocha", name: "Mocha Dream", emoji: "🍫", test: (s) => has(s, "mocha-sauce") && has(s, "whipped-cream") },
+  { id: "cozy", name: "Cozy Oat", emoji: "🌾", test: (s) => has(s, "oat-milk") && has(s, "cinnamon") },
+  { id: "nutty", name: "Nutty Cloud", emoji: "🌰", test: (s) => has(s, "hazelnut-syrup") && has(s, "cold-foam") },
+  { id: "vanilla", name: "Vanilla Sky", emoji: "🌼", test: (s) => has(s, "vanilla-syrup") && has(s, "cold-foam") },
+  { id: "rocket", name: "Rocket Fuel", emoji: "⚡", test: (s) => (s["espresso-shot"] ?? 0) >= 3 },
+  {
+    id: "dessert",
+    name: "Dessert Mode",
+    emoji: "🍨",
+    test: (s) => ["whipped-cream", "cold-foam", "caramel-drizzle", "cinnamon"].filter((t) => has(s, t)).length >= 3,
+  },
+];
+const has = (s: Selection, slug: string) => (s[slug] ?? 0) > 0;
+const combosIn = (s: Selection) => COMBOS.filter((c) => c.test(s));
+
+/** Sends a copy of the tapped ingredient flying in an arc into the cup. */
+function flyToCup(from: HTMLElement, to: HTMLElement | null, emoji: string) {
+  if (!to || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const a = from.getBoundingClientRect();
+  const b = to.getBoundingClientRect();
+  const node = document.createElement("span");
+  node.textContent = emoji;
+  node.setAttribute("aria-hidden", "true");
+  Object.assign(node.style, {
+    position: "fixed",
+    left: `${a.left + a.width / 2 - 16}px`,
+    top: `${a.top + a.height / 2 - 16}px`,
+    fontSize: "32px",
+    lineHeight: "32px",
+    pointerEvents: "none",
+    zIndex: "60",
+  });
+  document.body.append(node);
+  const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+  const dy = b.top + b.height * 0.35 - (a.top + a.height / 2);
+  const lift = Math.min(160, Math.abs(dx) * 0.3 + 70);
+  node
+    .animate(
+      [
+        { transform: "translate(0, 0) scale(1) rotate(0deg)" },
+        { transform: `translate(${dx * 0.5}px, ${Math.min(0, dy * 0.5) - lift}px) scale(1.4) rotate(-25deg)`, offset: 0.45 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.4) rotate(20deg)`, opacity: 0.2 },
+      ],
+      { duration: 650, easing: "cubic-bezier(.45,0,.55,1)" },
+    )
+    .finished.catch(() => {})
+    .finally(() => node.remove());
+}
+
 type Phase = "build" | "boxing" | "flying";
 
 export function GameBuilder({ drink }: { drink: DrinkConfig }) {
-  const router = useRouter();
   const cart = useCart();
   const [selection, setSelection] = useState<Selection>({});
   const [station, setStation] = useState(0);
@@ -78,8 +129,11 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
   // True while ingredients are still pouring, mixing or being prepared.
   const [cupBusy, setCupBusy] = useState(false);
   const [bump, setBump] = useState<{ slug: string; n: number; kind: "pop" | "shake" } | null>(null);
+  const [priceFx, setPriceFx] = useState<{ n: number; text: string } | null>(null);
+  const [combo, setCombo] = useState<{ n: number; name: string; emoji: string } | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const bumps = useRef(0);
+  const cupBox = useRef<HTMLDivElement>(null);
 
   // A saved recipe opens straight at the inspect station (#s=... in the URL).
   useEffect(() => {
@@ -94,11 +148,11 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
   }, [drink]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  const has = (slug: string) => (selection[slug] ?? 0) > 0;
+  const chosen = (slug: string) => has(selection, slug);
   const visible = visibleGroups(drink, selection);
   const groupsFor = (i: number) => visible.filter((g) => (STATIONS[i].groups as readonly string[]).includes(g.slug));
   const missingFor = (i: number) =>
-    groupsFor(i).filter((g) => (STATIONS[i].required as readonly string[]).includes(g.slug) && !g.options.some((o) => has(o.slug)));
+    groupsFor(i).filter((g) => (STATIONS[i].required as readonly string[]).includes(g.slug) && !g.options.some((o) => chosen(o.slug)));
   const firstIncomplete = STATIONS.findIndex((_, i) => missingFor(i).length > 0);
   const price = priceDrink(drink, selection);
   const ready = firstIncomplete === -1 && price.ok;
@@ -112,6 +166,24 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
     bumps.current += 1;
     setBump({ slug, n: bumps.current, kind });
   };
+  const unitTotal = (s: Selection) => priceBreakdown(drink, s).reduce((sum, l) => sum + l.cents, 0);
+
+  /** Applies a change. Additions (`from` set) fly into the cup, float the price and may unlock a combo. */
+  const commit = (raw: Selection, slug: string, from?: HTMLElement) => {
+    const next = normalizeSelection(drink, raw);
+    setSelection(next);
+    animateToken(slug, "pop");
+    if (!from) return;
+    flyToCup(from, cupBox.current, TOKEN[slug]?.emoji ?? "🥤");
+    const n = bumps.current;
+    const delta = unitTotal(next) - unitTotal(selection);
+    if (delta > 0) setPriceFx({ n, text: `+${formatCents(delta * quantity)}` });
+    const fresh = combosIn(next).find((c) => !combosIn(selection).some((o) => o.id === c.id));
+    if (fresh) {
+      setCombo({ n, name: fresh.name, emoji: fresh.emoji });
+      timers.current.push(setTimeout(() => setCombo((c) => (c?.n === n ? null : c)), 2600));
+    }
+  };
   const goTo = (i: number) => {
     // Stations open in order: you can't skip past one that still needs a choice.
     const limit = firstIncomplete === -1 ? STATIONS.length - 1 : firstIncomplete;
@@ -120,22 +192,21 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
     setReached((r) => Math.max(r, next));
   };
 
-  const pick = (group: DrinkGroup, option: DrinkOption) => {
+  const pick = (group: DrinkGroup, option: DrinkOption, from: HTMLElement) => {
     const next: Selection = { ...selection };
     for (const o of group.options) delete next[o.slug];
     next[option.slug] = 1;
     // Conveniences: iced starts on regular ice, and choosing a roast pours the included shot.
     if (option.slug === "iced" && !["light-ice", "regular-ice", "extra-ice"].some((s) => next[s])) next["regular-ice"] = 1;
     if (group.slug === "roast" && !next["espresso-shot"]) next["espresso-shot"] = drink.defaults["espresso-shot"] || 1;
-    setSelection(normalizeSelection(drink, next));
-    animateToken(option.slug, "pop");
+    commit(next, option.slug, from);
   };
 
-  const changeCount = (group: DrinkGroup, option: DrinkOption, delta: number) => {
+  const changeCount = (group: DrinkGroup, option: DrinkOption, delta: number, from?: HTMLElement) => {
     const qty = selection[option.slug] ?? 0;
-    const distinct = group.options.filter((o) => has(o.slug)).length;
+    const distinct = group.options.filter((o) => chosen(o.slug)).length;
     // Once a roast is chosen the cup keeps at least its included shot.
-    const roastChosen = ["signature-roast", "blonde-roast", "decaf-roast"].some(has);
+    const roastChosen = ["signature-roast", "blonde-roast", "decaf-roast"].some(chosen);
     const min = option.slug === "espresso-shot" && roastChosen ? 1 : 0;
     const target = qty + delta;
     if (target > option.maxQuantity || target < min || (qty === 0 && delta > 0 && distinct >= group.maxSelected)) {
@@ -145,13 +216,12 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
     const next = { ...selection };
     if (target <= 0) delete next[option.slug];
     else next[option.slug] = target;
-    setSelection(normalizeSelection(drink, next));
-    animateToken(option.slug, "pop");
+    commit(next, option.slug, delta > 0 ? from : undefined);
   };
 
-  const toggle = (option: DrinkOption, group: DrinkGroup) => {
-    if (has(option.slug)) changeCount(group, option, -1);
-    else changeCount(group, option, 1);
+  const toggle = (option: DrinkOption, group: DrinkGroup, from: HTMLElement) => {
+    if (chosen(option.slug)) changeCount(group, option, -1);
+    else changeCount(group, option, 1, from);
   };
 
   const order = () => {
@@ -164,10 +234,10 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
       unitPriceCents: price.totalCents,
       quantity,
     });
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return router.push("/cart");
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return cart.open();
     setPhase("boxing");
     timers.current.push(setTimeout(() => setPhase("flying"), 1300));
-    timers.current.push(setTimeout(() => router.push("/cart"), 2050));
+    timers.current.push(setTimeout(() => cart.open(), 2050));
   };
 
   // A running total while building; "from" only while the cup is still empty.
@@ -221,7 +291,22 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
           <p className="absolute right-3 top-3 z-10 rounded-full bg-card px-3 py-1 text-sm font-semibold tabular-nums shadow-sm ring-1 ring-line" aria-live="polite">
             {priceLabel}
           </p>
+          {priceFx && (
+            <span key={priceFx.n} aria-hidden className="price-float pointer-events-none absolute right-5 top-12 z-10 text-sm font-bold text-accent">
+              {priceFx.text}
+            </span>
+          )}
+          {combo && (
+            <p
+              key={combo.n}
+              role="status"
+              className="combo-pop absolute left-1/2 top-12 z-20 whitespace-nowrap rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background shadow-lg"
+            >
+              {combo.emoji} Combo unlocked: {combo.name}
+            </p>
+          )}
           <div
+            ref={cupBox}
             className={`absolute inset-x-0 bottom-[6%] top-[12%] flex justify-center ${phase === "flying" ? "box-fly" : ""}`}
             aria-label={summary.length ? `Your cup: ${summary.join(", ")}` : "An empty cup"}
             role="img"
@@ -231,13 +316,14 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
               stirKey={station}
               covered={inspecting || phase !== "build"}
               onBusyChange={setCupBusy}
-              className="h-full w-auto drop-shadow-md"
+              className="cup-float h-full w-auto drop-shadow-md"
             />
             {phase !== "build" && <Box />}
           </div>
           {summary.length === 0 && (
-            <p className="absolute inset-x-0 bottom-3 text-center text-sm text-muted">An empty cup, waiting for you.</p>
+            <p className="absolute inset-x-0 bottom-3 text-center text-sm text-muted">Tap an ingredient to start brewing.</p>
           )}
+          {inspecting && !cupBusy && phase === "build" && <Celebration combo={combosIn(selection)[0]} />}
         </section>
 
         {/* The station tray */}
@@ -253,6 +339,7 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
           <div key={`body-${current.id}`} className="station-in min-h-0 flex-1 overflow-y-auto px-4 py-3">
             {inspecting ? (
               <Inspect
+                combos={combosIn(selection)}
                 drink={drink}
                 selection={selection}
                 nutrition={nutrition}
@@ -278,12 +365,12 @@ export function GameBuilder({ drink }: { drink: DrinkConfig }) {
                         qty={selection[option.slug] ?? 0}
                         included={drink.defaults[option.slug] ?? 0}
                         animation={bump?.slug === option.slug ? bump : null}
-                        onTap={() =>
+                        onTap={(el) =>
                           group.selection === "single"
-                            ? pick(group, option)
+                            ? pick(group, option, el)
                             : option.maxQuantity > 1
-                              ? changeCount(group, option, 1)
-                              : toggle(option, group)
+                              ? changeCount(group, option, 1, el)
+                              : toggle(option, group, el)
                         }
                         onRemove={() => changeCount(group, option, -1)}
                       />
@@ -363,7 +450,7 @@ function Token({
   qty: number;
   included: number;
   animation: { n: number; kind: "pop" | "shake" } | null;
-  onTap: () => void;
+  onTap: (el: HTMLElement) => void;
   onRemove: () => void;
 }) {
   const look = TOKEN[option.slug] ?? { color: "var(--accent-soft)" };
@@ -378,7 +465,7 @@ function Token({
       <button
         key={animation?.n}
         type="button"
-        onClick={onTap}
+        onClick={(e) => onTap(e.currentTarget)}
         aria-pressed={group.selection === "single" || !counter ? selected : undefined}
         aria-label={`${counter ? "Add" : selected && group.selection === "multi" ? "Remove" : "Choose"} ${option.name}${counter && qty ? `, ${qty} added` : ""}`}
         className={`relative flex h-16 w-16 items-center justify-center rounded-full text-2xl shadow-sm transition hover:-translate-y-0.5 sm:h-[72px] sm:w-[72px] ${
@@ -428,6 +515,37 @@ function Token({
   );
 }
 
+const CONFETTI = Array.from({ length: 24 }, (_, i) => {
+  const angle = (i / 24) * Math.PI * 2;
+  const dist = 100 + ((i * 37) % 80);
+  return {
+    x: Math.round(Math.cos(angle) * dist),
+    y: Math.round(Math.sin(angle) * dist - 40),
+    r: (i * 97) % 540,
+    color: ["var(--accent)", "#f1dfa8", "#5a3220", "#e4c99c", "#c98a3d"][i % 5],
+  };
+});
+
+/** Confetti and a stamp once the finished cup is lidded. */
+function Celebration({ combo }: { combo?: { name: string; emoji: string } }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10" aria-hidden>
+      <div className="absolute left-1/2 top-[45%]">
+        {CONFETTI.map((p, i) => (
+          <span
+            key={i}
+            className="confetti absolute block h-3 w-1.5 rounded-sm"
+            style={{ background: p.color, "--x": `${p.x}px`, "--y": `${p.y}px`, "--r": `${p.r}deg`, animationDelay: `${(i % 4) * 40}ms` } as React.CSSProperties}
+          />
+        ))}
+      </div>
+      <p className="stamp absolute bottom-4 left-1/2 whitespace-nowrap rounded-xl border-4 border-accent bg-card/90 px-4 py-1 font-display text-lg font-bold text-accent shadow-lg md:text-xl">
+        {combo ? `${combo.emoji} ${combo.name}!` : "☕ Brewed to perfection!"}
+      </p>
+    </div>
+  );
+}
+
 /** The takeaway box that closes around the cup when the order is placed. */
 function Box() {
   return (
@@ -445,11 +563,13 @@ function Box() {
 }
 
 function Inspect({
+  combos,
   drink,
   selection,
   nutrition,
   saveDisabled,
 }: {
+  combos: typeof COMBOS;
   drink: DrinkConfig;
   selection: Selection;
   nutrition: ReturnType<typeof estimateNutrition>;
@@ -466,6 +586,15 @@ function Inspect({
   ];
   return (
     <div className="space-y-3">
+      {combos.length > 0 && (
+        <ul className="flex flex-wrap gap-2" aria-label="Combos unlocked">
+          {combos.map((c) => (
+            <li key={c.id} className="rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold">
+              {c.emoji} {c.name}
+            </li>
+          ))}
+        </ul>
+      )}
       <div>
         <h2 className="text-sm font-semibold">Nutrition (estimated per cup)</h2>
         <dl className="mt-2 grid grid-cols-5 gap-1.5 text-center">
@@ -479,7 +608,7 @@ function Inspect({
       </div>
 
       <CostBreakdown lines={lines} unit={unit} />
-      <SaveRecipe slug={drink.slug} selection={selection} disabled={saveDisabled} />
+      <SaveRecipe slug={drink.slug} selection={selection} disabled={saveDisabled} defaultName={combos[0]?.name ?? "My coffee"} />
     </div>
   );
 }
@@ -516,10 +645,10 @@ function CostBreakdown({ lines, unit }: { lines: { label: string; cents: number 
   );
 }
 
-function SaveRecipe({ slug, selection, disabled }: { slug: string; selection: Selection; disabled: boolean }) {
+function SaveRecipe({ slug, selection, disabled, defaultName }: { slug: string; selection: Selection; disabled: boolean; defaultName: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("My coffee");
+  const [name, setName] = useState(defaultName);
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
 

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useCart, type CartLine } from "@/components/cart";
 import { buttonPrimary } from "@/components/ui";
@@ -9,9 +8,9 @@ export function AddSignatureButton({ line }: { line: Omit<CartLine, "id"> }) {
   const cart = useCart();
   const [added, setAdded] = useState(false);
   return added ? (
-    <Link href="/cart" className={buttonPrimary}>
+    <button type="button" onClick={cart.open} className={buttonPrimary}>
       Added ✓ View order
-    </Link>
+    </button>
   ) : (
     <button
       type="button"

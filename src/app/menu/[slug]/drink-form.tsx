@@ -170,9 +170,9 @@ export function DrinkForm({ drink }: { drink: DrinkConfig }) {
               <Link href="/menu" className="rounded-full px-4 py-3 text-sm font-medium ring-1 ring-line">
                 Keep browsing
               </Link>
-              <Link href="/cart" className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-accent-contrast">
+              <button type="button" onClick={cart.open} className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-accent-contrast">
                 View cart
-              </Link>
+              </button>
             </>
           ) : (
             <>

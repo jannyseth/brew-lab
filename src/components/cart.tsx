@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { Selection } from "@/lib/drink";
 
@@ -24,6 +23,10 @@ type CartContext = {
   add: (line: Omit<CartLine, "id">) => void;
   setQuantity: (id: string, quantity: number) => void;
   clear: () => void;
+  /** The cart and checkout open as a drawer over the current page. */
+  isOpen: boolean;
+  open: () => void;
+  close: () => void;
 };
 
 const Context = createContext<CartContext | null>(null);
@@ -33,6 +36,7 @@ export const MAX_QUANTITY = 10;
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -60,6 +64,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           : prev.map((l) => (l.id === id ? { ...l, quantity: Math.min(quantity, MAX_QUANTITY) } : l)),
       ),
     clear: () => setLines([]),
+    isOpen,
+    open: () => setIsOpen(true),
+    close: () => setIsOpen(false),
   };
 
   return <Context.Provider value={value}>{children}</Context.Provider>;
@@ -72,11 +79,11 @@ export function useCart() {
 }
 
 export function CartLink() {
-  const { lines } = useCart();
+  const { lines, open } = useCart();
   const count = lines.reduce((n, l) => n + l.quantity, 0);
   return (
-    <Link href="/cart" className="hover:text-accent">
+    <button type="button" onClick={open} className="hover:text-accent">
       Cart{count > 0 && <span className="ml-1 rounded-full bg-accent px-2 py-0.5 text-xs text-accent-contrast">{count}</span>}
-    </Link>
+    </button>
   );
 }

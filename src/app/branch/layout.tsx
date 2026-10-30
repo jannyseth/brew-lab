@@ -27,15 +27,9 @@ async function BranchSidebar() {
         { href: "/branch/manage", label: "Manage branches" },
       ],
     },
-    ...approved.map((b) => ({
-        title: b.name,
-        links: [
-          { href: `/branch/${b.id}`, label: "Dashboard", exact: true },
-          { href: `/branch/${b.id}/orders`, label: "Orders" },
-          { href: `/branch/${b.id}/sales`, label: "Sales" },
-          { href: `/branch/${b.id}/payroll`, label: "Payroll" },
-        ],
-      })),
+    ...(approved.length > 0
+      ? [{ title: "Branches", links: approved.map((b) => ({ href: `/branch/${b.id}`, label: b.name })) }]
+      : []),
   ];
   return <SideNav title="Your branches" sections={sections} />;
 }

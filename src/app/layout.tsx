@@ -3,7 +3,9 @@ import { Fraunces, Geist } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CartProvider } from "@/components/cart";
+import { CartDrawer } from "@/components/cart-drawer";
 import { HeaderHeight } from "@/components/header-height";
+import { HelpDrawer } from "@/components/help-drawer";
 import { SiteFooter } from "@/components/site-footer";
 import { UserMenu } from "@/components/user-menu";
 import "./globals.css";
@@ -53,6 +55,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </nav>
           </header>
           <main className="flex-1">{children}</main>
+          {/* Both read the current page address, which is only known at request time. */}
+          <Suspense fallback={null}>
+            <CartDrawer />
+            <HelpDrawer />
+          </Suspense>
         </CartProvider>
         <SiteFooter />
         <HeaderHeight />

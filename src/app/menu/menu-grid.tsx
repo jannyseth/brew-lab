@@ -145,15 +145,16 @@ export function MenuGrid({ sections }: { sections: Section[] }) {
 
       {(count > 0 || toast) && (
         <div className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4">
-          <Link
-            href="/cart"
+          <button
+            type="button"
+            onClick={cart.open}
             className="flex w-full max-w-md items-center justify-between gap-4 rounded-full bg-foreground px-5 py-3.5 text-background shadow-xl transition active:scale-[.98]"
           >
             <span className="text-sm font-medium" aria-live="polite">
               {toast ? `✓ ${toast}` : `${count} ${count === 1 ? "drink" : "drinks"} in your order`}
             </span>
             <span className="text-sm font-semibold tabular-nums">{formatCents(total)} · View cart →</span>
-          </Link>
+          </button>
         </div>
       )}
     </>

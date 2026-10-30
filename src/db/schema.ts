@@ -415,3 +415,20 @@ export const supportMessages = pgTable(
   },
   (t) => [index("support_messages_ticket_idx").on(t.ticketId, t.createdAt)],
 );
+
+// A private, unguessable link a customer made to share one receipt or one
+// week of orders on social media. The shared card never shows names or notes.
+export const receiptShares = pgTable(
+  "receipt_shares",
+  {
+    token: text("token").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    orderId: integer("order_id").references(() => orders.id, { onDelete: "cascade" }),
+    // Monday of the shared week, in the shop's timezone.
+    weekStart: date("week_start"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("receipt_shares_order_idx").on(t.orderId), uniqueIndex("receipt_shares_week_idx").on(t.userId, t.weekStart)],
+);

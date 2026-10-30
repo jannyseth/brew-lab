@@ -118,7 +118,7 @@ export default async function PayrollPage({ params }: PageProps<"/branch/[branch
 
   return (
     <div>
-      <BranchHeader branch={branch} active="Payroll" />
+      <BranchHeader branch={branch} />
       <p className="mb-8 rounded-xl bg-accent-soft px-4 py-3 text-sm">
         A record-keeping log. Pay your staff through your usual bank or e-wallet; Brew Lab never moves money. Each entry creates a
         payslip PDF that is emailed to the employee and your records inbox.

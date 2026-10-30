@@ -76,13 +76,13 @@ export type Step =
   | { kind: "sprinkle" }
   | { kind: "topping"; id: ToppingId; on: boolean };
 
-/** Durations in milliseconds, as approved: pours ~0.8–1.2 s, milk mixing 1.5 s, stir 0.6 s. */
+/** Durations in milliseconds: pours ~1.1–1.6 s (the pitcher or machine slides in first), milk mixing 1.5 s, stir 0.6 s. */
 export const DURATION = {
   cup: 250,
   icePerCube: 80,
   iceSettle: 450,
-  pourMin: 800,
-  pourMax: 1200,
+  pourMin: 1100,
+  pourMax: 1600,
   drain: 400,
   milkMix: 1500,
   stir: 600,

@@ -57,6 +57,13 @@
       "when": 1793362232829,
       "tag": "0007_two_factor",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793376984139,
+      "tag": "0008_receipt_shares",
+      "breakpoints": true
     }
   ]
 }
