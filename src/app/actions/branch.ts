@@ -10,6 +10,7 @@ import type { FormState } from "@/components/action-form";
 import { logActivity } from "@/lib/audit";
 import { authorizeBranch } from "@/lib/branch-access";
 import { awardCoinsForOrder, voidCoinsForOrder } from "@/lib/coins";
+import { releaseClaims } from "@/lib/order-board";
 import { emailPayslip } from "@/lib/payslips";
 import { getSession } from "@/lib/session";
 import { clockedHours, confirmOwnPassword } from "@/lib/workers";
@@ -246,6 +247,8 @@ export async function setEmployeeActive(branchId: number, employeeId: number, ac
       .update(timeEntries)
       .set({ clockOut: new Date() })
       .where(and(eq(timeEntries.employeeId, employeeId), eq(timeEntries.branchId, branchId), isNull(timeEntries.clockOut)));
+    await releaseClaims(employeeId);
+    revalidatePath(`/branch/${branchId}/orders`);
   }
   await logActivity({
     ...access.viewer,

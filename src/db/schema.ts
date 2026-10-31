@@ -125,6 +125,8 @@ export const branches = pgTable(
     imageKey: text("image_key"),
     // Where payslips are copied for documentation, e.g. the owner's accountant.
     recordsEmail: text("records_email"),
+    // Orders each worker aims to finish per shift. A goal shown to the team, never a limit.
+    shiftOrderTarget: integer("shift_order_target"),
     status: reviewStatus("status").notNull().default("pending"),
     reviewNote: text("review_note"),
     reviewedAt: timestamp("reviewed_at"),
@@ -171,6 +173,10 @@ export const orders = pgTable(
     // A free drink paid for with bean coins; totalCents is already reduced by discountCents.
     coinsUsed: integer("coins_used").notNull().default(0),
     discountCents: integer("discount_cents").notNull().default(0),
+    // The worker who called dibs and makes the order. Null means it's waiting,
+    // or the owner handled it themselves.
+    makerId: integer("maker_id").references(() => employees.id, { onDelete: "set null" }),
+    claimedAt: timestamp("claimed_at"),
     completedAt: timestamp("completed_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at")
@@ -178,7 +184,11 @@ export const orders = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [index("orders_branch_idx").on(t.branchId, t.createdAt), index("orders_user_idx").on(t.userId)],
+  (t) => [
+    index("orders_branch_idx").on(t.branchId, t.createdAt),
+    index("orders_user_idx").on(t.userId),
+    index("orders_maker_idx").on(t.makerId, t.completedAt),
+  ],
 );
 
 export const orderItems = pgTable(

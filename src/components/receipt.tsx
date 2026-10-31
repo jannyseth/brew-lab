@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { branches, orderItems, orders } from "@/db/schema";
+import { branches, employees, orderItems, orders } from "@/db/schema";
 import { formatCents } from "@/lib/drink";
 import { PrintButton } from "./print-button";
 import { buttonPrimary, formatDateTime } from "./ui";
@@ -8,14 +8,17 @@ import { buttonPrimary, formatDateTime } from "./ui";
 /** Loads everything a receipt needs. Callers must check who may see the order first. */
 export async function loadReceipt(orderId: number) {
   const [row] = await db
-    .select({ order: orders, branch: branches })
+    .select({ order: orders, branch: branches, maker: { name: employees.name, userId: employees.userId } })
     .from(orders)
     .innerJoin(branches, eq(orders.branchId, branches.id))
+    .leftJoin(employees, eq(orders.makerId, employees.id))
     .where(eq(orders.id, orderId));
   if (!row) return null;
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
   return { ...row, items };
 }
+
+export type ReceiptCopy = "Customer copy" | "Branch copy" | "Worker copy";
 
 export const receiptNumber = (orderId: number) => `R-${String(orderId).padStart(6, "0")}`;
 
@@ -24,9 +27,9 @@ export function Receipt({
   copy,
 }: {
   data: NonNullable<Awaited<ReturnType<typeof loadReceipt>>>;
-  copy: "Customer copy" | "Branch copy";
+  copy: ReceiptCopy;
 }) {
-  const { order, branch, items } = data;
+  const { order, branch, items, maker } = data;
   const status =
     order.status === "cancelled" ? "Cancelled" : order.paidAt ? `Paid at the counter · ${formatDateTime(order.paidAt)}` : "Unpaid · pay at pickup";
 
@@ -63,6 +66,12 @@ export function Receipt({
             <dt>Pickup name</dt>
             <dd>{order.pickupName}</dd>
           </div>
+          {copy !== "Customer copy" && maker?.name && (
+            <div className="flex justify-between">
+              <dt>Made by</dt>
+              <dd>{maker.name}</dd>
+            </div>
+          )}
         </dl>
 
         <ul className="mt-3 space-y-3">

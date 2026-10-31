@@ -117,8 +117,10 @@ async function newDoc(title: string, size: [number, number], margin: number) {
 
 export type ReceiptData = {
   receiptNumber: string;
-  copy: "Customer copy" | "Branch copy";
+  copy: "Customer copy" | "Branch copy" | "Worker copy";
   branch: { name: string; address: string };
+  // Printed on the branch and worker copies.
+  makerName?: string | null;
   order: {
     id: number;
     createdAt: Date;
@@ -146,6 +148,7 @@ export async function receiptPdf(r: ReceiptData) {
   w.row("Order", `#${r.order.id}`);
   w.row("Ordered", pdfDate(r.order.createdAt));
   w.row("Pickup name", r.order.pickupName);
+  if (r.makerName && r.copy !== "Customer copy") w.row("Made by", r.makerName);
   w.rule();
   for (const item of r.items) {
     w.row(`${item.quantity} x ${item.drinkName}`, pdfMoney(item.unitPriceCents * item.quantity), { bold: true });

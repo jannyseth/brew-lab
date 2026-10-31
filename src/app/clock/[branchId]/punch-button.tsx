@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { clockPunch } from "@/app/actions/lounge";
+import { buttonPrimary } from "@/components/ui";
 
 /** The big clock in / clock out button after scanning the counter code. */
 export function PunchButton({ branchId, code, clockedIn }: { branchId: number; code: string; clockedIn: boolean }) {
@@ -29,6 +31,11 @@ export function PunchButton({ branchId, code, clockedIn }: { branchId: number; c
           {state.ok ? (now ? "✅ " : "👋 ") : ""}
           {state.message}
         </p>
+      )}
+      {done && now && (
+        <Link href="/work/orders" className={`${buttonPrimary} mt-4 inline-block`}>
+          Go to the order board →
+        </Link>
       )}
     </div>
   );

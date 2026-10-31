@@ -53,9 +53,14 @@ export async function UserMenu() {
         </Link>
       )}
       {role === "worker" && (
-        <Link href="/work" className="hover:text-accent">
-          Work
-        </Link>
+        <>
+          <Link href="/work/orders" className="hover:text-accent">
+            Orders
+          </Link>
+          <Link href="/work" className="hover:text-accent">
+            Work
+          </Link>
+        </>
       )}
       {role === "super_admin" && (
         <Link href="/admin" className="hover:text-accent">

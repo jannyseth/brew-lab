@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { and, desc, eq, inArray } from "drizzle-orm";
+import Link from "next/link";
 import { db } from "@/db";
 import { branches, employees, timeEntries } from "@/db/schema";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { ChatList } from "@/components/chat";
 import { MessageButton, NewGroupForm } from "@/components/lounge-forms";
-import { cardClass, formatDateTime, PageTitle } from "@/components/ui";
+import { buttonPrimary, cardClass, formatDateTime, PageTitle } from "@/components/ui";
 import { formatCents } from "@/lib/drink";
 import { requireRole } from "@/lib/session";
 import { branchPeople, clockedHours, conversationList, openShifts, thisWeek } from "@/lib/workers";
@@ -70,6 +71,9 @@ export default async function WorkPage() {
                 </span>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
+                <Link href="/work/orders" className={buttonPrimary}>
+                  {since ? "Order board →" : "See the order board"}
+                </Link>
                 <MessageButton branchId={j.branchId} userId={j.ownerId} label="Message the owner" />
               </div>
               <details className="mt-4">

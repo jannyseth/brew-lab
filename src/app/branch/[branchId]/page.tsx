@@ -6,11 +6,13 @@ import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { ActivityHeatmap, BarList, QuotaDonut, TrendChart } from "@/components/charts";
 import { StatTiles } from "@/components/stat-tiles";
-import { buttonSecondary, cardClass, formatDate } from "@/components/ui";
+import { receiptNumber } from "@/components/receipt";
+import { buttonSecondary, cardClass, formatDate, formatDateTime } from "@/components/ui";
 import { activityByHour, dailySales, feeFor, salesSummary, topDrinks } from "@/lib/analytics";
 import { getManagedBranch } from "@/lib/branch-access";
 import { formatCents } from "@/lib/drink";
 import { branchSalesBetween, currentLicense, settleExpiredLicenses } from "@/lib/licenses";
+import { receiptLog } from "@/lib/order-board";
 import { requireUser } from "@/lib/session";
 import { BranchHeader } from "./branch-header";
 
@@ -24,7 +26,7 @@ export default async function BranchDashboard({ params }: PageProps<"/branch/[br
 
   await settleExpiredLicenses();
   const scope = [branch.id];
-  const [summary, daily, drinks, activity, license, [open]] = await Promise.all([
+  const [summary, daily, drinks, activity, license, [open], receipts] = await Promise.all([
     salesSummary(scope),
     dailySales(scope, 30),
     topDrinks(scope),
@@ -34,6 +36,7 @@ export default async function BranchDashboard({ params }: PageProps<"/branch/[br
       .select({ n: count() })
       .from(orders)
       .where(and(eq(orders.branchId, branch.id), inArray(orders.status, ["placed", "preparing", "ready"]))),
+    receiptLog(branch.id),
   ]);
   const quotaSales = license ? await branchSalesBetween(branch.id, license.issuedAt, license.expiresAt) : 0;
 
@@ -124,6 +127,31 @@ export default async function BranchDashboard({ params }: PageProps<"/branch/[br
             </tbody>
           </table>
         </div>
+      </details>
+
+      <details className={`${cardClass} mt-3`}>
+        <summary className="cursor-pointer font-semibold">Receipts log</summary>
+        <p className="mb-3 mt-2 text-xs text-muted">Every finished order, newest first, with who made it. The worker who made an order keeps their own copy.</p>
+        {receipts.length === 0 ? (
+          <p className="text-sm text-muted">No finished orders yet.</p>
+        ) : (
+          <ul className="divide-y divide-line text-sm">
+            {receipts.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span>
+                  {receiptNumber(r.id)} <span className="text-muted">· {r.completedAt ? formatDateTime(r.completedAt) : ""}</span>
+                  <span className="text-muted"> · made by {r.makerName ?? "you"}</span>
+                </span>
+                <span className="flex items-center gap-3">
+                  <span className="tabular-nums">{formatCents(r.totalCents)}</span>
+                  <Link href={`/branch/${branch.id}/orders/${r.id}/receipt`} className="text-accent hover:underline">
+                    View
+                  </Link>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </details>
     </div>
   );

@@ -8,6 +8,7 @@ import { chatMessages, conversationMembers, conversations, employees, timeEntrie
 import type { FormState } from "@/components/action-form";
 import { logActivity } from "@/lib/audit";
 import { authorizeBranch } from "@/lib/branch-access";
+import { releaseClaims } from "@/lib/order-board";
 import { getSession } from "@/lib/session";
 import {
   branchMembership,
@@ -248,9 +249,19 @@ export async function clockPunch(branchId: number, code: string): Promise<Result
     .where(and(eq(timeEntries.employeeId, employeeId), isNull(timeEntries.clockOut)))
     .returning({ id: timeEntries.id });
   if (open) {
-    await logActivity({ ...viewer, action: "clock.out", targetType: "time_entry", targetId: open.id, details: { branchId } });
-    revalidatePath("/work");
-    return { ok: true, message: "Clocked out. Thanks for your shift!", clockedIn: false };
+    // Orders they were still making go back up for grabs.
+    const released = await releaseClaims(employeeId);
+    await logActivity({
+      ...viewer,
+      action: "clock.out",
+      targetType: "time_entry",
+      targetId: open.id,
+      details: { branchId, releasedOrders: released.map((o) => o.id) },
+    });
+    revalidatePath("/work", "layout");
+    revalidatePath(`/branch/${branchId}`, "layout");
+    const note = released.length ? ` ${released.length} unfinished order${released.length === 1 ? " went" : "s went"} back to the queue.` : "";
+    return { ok: true, message: `Clocked out. Thanks for your shift!${note}`, clockedIn: false };
   }
   const [entry] = await db
     .insert(timeEntries)

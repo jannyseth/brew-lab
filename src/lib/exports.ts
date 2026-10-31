@@ -1,7 +1,7 @@
 import "server-only";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { branches, orderItems, orders } from "@/db/schema";
+import { branches, employees, orderItems, orders } from "@/db/schema";
 import { receiptNumber } from "@/components/receipt";
 import { dailySales, feeFor, type Scope } from "./analytics";
 import type { SheetSpec } from "./sheets";
@@ -17,9 +17,10 @@ export async function salesSheets(scope: Scope, opts: { includePickupNames: bool
     sql`${orders.createdAt} >= now() - make_interval(days => ${days})`,
   );
   const orderRows = await db
-    .select({ order: orders, branchName: branches.name })
+    .select({ order: orders, branchName: branches.name, makerName: employees.name })
     .from(orders)
     .innerJoin(branches, eq(orders.branchId, branches.id))
+    .leftJoin(employees, eq(orders.makerId, employees.id))
     .where(where)
     .orderBy(desc(orders.createdAt));
   const ids = orderRows.map((o) => o.order.id);
@@ -57,8 +58,9 @@ export async function salesSheets(scope: Scope, opts: { includePickupNames: bool
         { header: "Status", key: "status", width: 12 },
         { header: "Paid at", key: "paidAt", date: true, width: 18 },
         { header: "Counted as sale", key: "sale", money: true, width: 16 },
+        { header: "Made by", key: "maker", width: 18 },
       ],
-      rows: orderRows.map(({ order, branchName }) => ({
+      rows: orderRows.map(({ order, branchName, makerName }) => ({
         receipt: receiptNumber(order.id),
         id: order.id,
         branch: branchName,
@@ -69,6 +71,7 @@ export async function salesSheets(scope: Scope, opts: { includePickupNames: bool
         status: statusLabel(order.status),
         paidAt: sheetDate(order.paidAt),
         sale: sales(order),
+        maker: makerName ?? (order.status === "completed" ? "Owner" : ""),
       })),
     },
     {
