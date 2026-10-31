@@ -28,6 +28,13 @@ export default async function ProfilePage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       <PageTitle title="Your profile" subtitle={`${accountLabels[me.role] ?? me.role} · ${me.email}`} />
+      {me.role === "customer" && (
+        <p className="-mt-4 mb-6 text-sm">
+          <Link href="/account" className="text-accent hover:underline">
+            ← Your account
+          </Link>
+        </p>
+      )}
 
       <section className={cardClass}>
         <ImageUpload target={{ kind: "avatar" }} currentUrl={me.image} label="Profile picture" hint="JPG, PNG or WebP, up to 4 MB." />

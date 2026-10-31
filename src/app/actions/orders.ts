@@ -50,7 +50,7 @@ export async function claimOrder(orderId: number): Promise<FormState> {
     .where(and(eq(orders.id, orderId), isNull(orders.makerId), eq(orders.status, "placed")))
     .returning({ id: orders.id });
   refresh(order.branchId);
-  if (claimed.length === 0) return fail("Someone else called dibs first.");
+  if (claimed.length === 0) return fail("Someone else picked this up first.");
   await logActivity({ ...viewer, action: "order.claimed", targetType: "order", targetId: orderId, details: { employeeId } });
   return { ok: true, message: `Order #${orderId} is yours.` };
 }
@@ -81,13 +81,13 @@ export async function workerAdvance(orderId: number): Promise<FormState> {
   const { order, employeeId, viewer } = access;
   let next: "ready" | "completed";
   if (order.status === "preparing") {
-    if (order.makerId !== employeeId) return fail("Call dibs on this order first.");
+    if (order.makerId !== employeeId) return fail("Pick up this order first.");
     next = "ready";
   } else if (order.status === "ready") {
-    if (!order.paidAt) return fail("Mark the order as paid before handing it over.");
+    if (!order.paidAt) return fail("Tap Payment received before marking it done.");
     next = "completed";
   } else {
-    return fail(order.status === "placed" ? "Call dibs on this order first." : "This order is already finished.");
+    return fail(order.status === "placed" ? "Pick up this order first." : "This order is already finished.");
   }
   const updated = await db
     .update(orders)
@@ -98,7 +98,7 @@ export async function workerAdvance(orderId: number): Promise<FormState> {
   if (updated.length === 0) return fail("Someone else just updated this order.");
   if (next === "completed") after(() => awardCoinsForOrder(orderId));
   await logActivity({ ...viewer, action: "order.status", targetType: "order", targetId: orderId, details: { from: order.status, to: next, employeeId } });
-  return { ok: true, message: next === "ready" ? `Order #${orderId} is ready for pickup.` : `Order #${orderId} handed over.` };
+  return { ok: true, message: next === "ready" ? `Order #${orderId} is ready for pickup.` : `Order #${orderId} is done.` };
 }
 
 /** Workers take payment at the counter too. */

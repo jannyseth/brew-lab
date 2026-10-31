@@ -15,7 +15,7 @@ import { requireRole } from "@/lib/session";
 export const metadata: Metadata = { title: "Order board" };
 
 /**
- * The worker's live board: call dibs on a waiting order, make it, mark it ready.
+ * The worker's live board: pick up a waiting order, make it, take payment, mark it done.
  * Only someone clocked in at the branch can take orders.
  */
 export default async function WorkOrdersPage() {
@@ -40,7 +40,7 @@ export default async function WorkOrdersPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <AutoRefresh seconds={6} />
-      <PageTitle title="Order board" subtitle="First to tap Dibs makes the order. Mark it ready when it's done." />
+      <PageTitle title="Order board" subtitle="Tap Pick up to take an order, Order done when it's made, Payment received, then Mark as done." />
       <p className="-mt-4 mb-6 text-sm">
         <Link href="/work" className="text-accent hover:underline">
           ← Work home
@@ -55,7 +55,7 @@ export default async function WorkOrdersPage() {
         const grabs = b.open.filter(isUpForGrabs);
         const ready = b.open.filter((o) => o.status === "ready");
         const sections = [
-          { title: "Yours", empty: "Nothing yet. Call dibs on an order below.", orders: mine },
+          { title: "Yours", empty: "Nothing yet. Pick up an order below.", orders: mine },
           { title: "Up for grabs", empty: "All caught up. New orders show up here by themselves.", orders: grabs },
           { title: "Ready for pickup", empty: "Nothing waiting at the counter.", orders: ready },
         ];
@@ -82,15 +82,14 @@ export default async function WorkOrdersPage() {
                   <ul className="space-y-3">
                     {s.orders.map((o) => (
                       <OrderCard key={o.id} order={o} highlight={o.makerId === b.employeeId && o.status === "preparing"}>
-                        {onShift && (
-                          <WorkerOrderButtons
-                            orderId={o.id}
-                            status={o.status}
-                            paid={Boolean(o.paidAt)}
-                            mine={o.makerId === b.employeeId}
-                            upForGrabs={isUpForGrabs(o)}
-                          />
-                        )}
+                        <WorkerOrderButtons
+                          orderId={o.id}
+                          status={o.status}
+                          paid={Boolean(o.paidAt)}
+                          mine={o.makerId === b.employeeId}
+                          upForGrabs={isUpForGrabs(o)}
+                          onShift={onShift}
+                        />
                       </OrderCard>
                     ))}
                   </ul>

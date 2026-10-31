@@ -25,6 +25,13 @@ export default async function SupportPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       <PageTitle title="Support" subtitle="Your messages with the Brew Lab team. We reply here and let you know by email." />
+      {me.role === "customer" && (
+        <p className="-mt-4 mb-6 text-sm">
+          <Link href="/account" className="text-accent hover:underline">
+            ← Your account
+          </Link>
+        </p>
+      )}
       <Link href="/support/new" className={buttonPrimary}>
         Message us
       </Link>
